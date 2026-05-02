@@ -25,7 +25,7 @@ KernelData kernelData;
 bool debugLogging = false;
 bool enableTicking = false;
 
-extern "C" void apic_timer_handler() {
+void apic_timer_handler() {
     kernelData.Hpet.Tick(); // To make sure the HPET's internal tick count does not overflow.
 
     // We send the EOI *before* actually finishing this, since the Tick might enter userspace or do something else, which means the APIC interrupt wont resend.

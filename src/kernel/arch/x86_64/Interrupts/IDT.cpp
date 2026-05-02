@@ -104,6 +104,7 @@ namespace Interrupts {
         Memory::Paging::PagingState* backupState = nullptr;
         if (_pagingInitialized) {
             backupState = _paging->GetCurrentPagingState();
+            _paging->SwitchToKernelPageTable();
         }
 
         _registersForInterrupts[irq] = registers; // Save the register state for this interrupt so that it can be accessed by the handler if needed

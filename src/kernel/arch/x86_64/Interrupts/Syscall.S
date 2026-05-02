@@ -47,7 +47,7 @@ SyscallHandler:
     pop %rdx
     pop %rsi
     pop %rdi
-    pop %rax    // Popped syscall number (RAX)
+    add $8, %rsp // Skip %rax, so we keep the syscall return value intact
 
     // Restore context without switching RSP prematurely
     pop %rdx    // Pop User RSP into a scratch register (RDX)
@@ -62,8 +62,6 @@ SyscallHandler:
 .global EnterUserspace
 .type EnterUserspace,@function
 EnterUserspace:
-    // RDI = entry point, RSI = user stack
-    cli
     push $0x33 // SS selector (GDT entry 3)
     push %rsi // User stack pointer
     pushfq
@@ -73,4 +71,41 @@ EnterUserspace:
     push $0x3B // CS selector (GDT entry 4)
     push %rdi // User instruction pointer
     mov $0, %rax
+    sti // Enable interrupts, so we can schedule other stuff later.
+    iretq
+
+// extern void ResumeThread(Interrupts::IDT::Registers* registers);
+.global ResumeThread
+.type ResumeThread,@function
+ResumeThread:
+    // rdi = pointer to Registers struct
+    // Build iretq frame first, then restore GPRs
+
+    // Region: iretq frame
+    mov $0x33, %rax    // User SS selector (GDT entry 4)
+    push %rax
+    mov 0x98(%rdi), %rax    // user_rsp
+    push %rax
+    mov 0x90(%rdi), %rax    // rflags
+    push %rax
+    mov $0x3B, %rax    // User CS selector (GDT entry 3)
+    push %rax
+    mov 0x80(%rdi), %rax    // rip
+    push %rax
+
+    mov 0x00(%rdi), %rax
+    mov 0x08(%rdi), %rbx
+    mov 0x18(%rdi), %rdx
+    mov 0x30(%rdi), %rbp
+    mov 0x38(%rdi), %r8
+    mov 0x40(%rdi), %r9
+    mov 0x40(%rdi), %r10
+    mov 0x48(%rdi), %r11
+    mov 0x58(%rdi), %r12
+    mov 0x60(%rdi), %r13
+    mov 0x68(%rdi), %r14
+    mov 0x70(%rdi), %r15
+    mov 0x20(%rdi), %rsi
+    mov 0x28(%rdi), %rdi
+
     iretq

@@ -19,7 +19,7 @@ namespace Core::Time {
         [[nodiscard]] uint64_t GetFrequency() const;
 
         void BusyWait(uint64_t nanoseconds) const;
-
+        void Tick();
     private:
         Firmware::ACPI* _acpi;
         Memory::Paging* _paging;
@@ -73,7 +73,6 @@ namespace Core::Time {
         uint64_t _timerCount;
         uint64_t _totalTicks;
         uint64_t _lastCounter;
-        void Tick();
     };
 }
 

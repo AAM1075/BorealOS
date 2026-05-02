@@ -5,5 +5,6 @@
 #include "../Boot/LimineDefinitions.h"
 
 #define HIGHER_HALF(addr) ((uint64_t)addr + (uint64_t)hhdm_request.response->offset)
+#define IS_HIGHER_HALF(addr) ((uint64_t)addr >= (uint64_t)hhdm_request.response->offset)
 
 #endif

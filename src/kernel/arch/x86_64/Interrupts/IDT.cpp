@@ -106,6 +106,8 @@ namespace Interrupts {
             backupState = _paging->GetCurrentPagingState();
         }
 
+        _registersForInterrupts[irq] = registers; // Save the register state for this interrupt so that it can be accessed by the handler if needed
+
         //LOG_DEBUG("IRQ %u8", irq);
         if (_irqHandlers[irq] != nullptr) {
             _irqHandlers[irq]();
@@ -202,10 +204,14 @@ namespace Interrupts {
     void IDT::SetInterruptController(InterruptController* ic) {
         _ic = ic;
     }
+
+    const IDT::Registers *IDT::GetRegistersForInterrupt(uint8_t interruptVector) const {
+        return _registersForInterrupts[interruptVector];
+    }
 } // Interrupts
 
 extern "C" {
-    void IRQHandler(uint8_t irq, Interrupts::IDT::Registers* regs) {
+    void IRQHandler(uint8_t irq, uint64_t errorCode, Interrupts::IDT::Registers* regs) {
         Kernel<KernelData>::GetInstance()->ArchitectureData->Idt.IRQHandler(irq - 32, regs);
     }
 

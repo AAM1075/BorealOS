@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.31)
-project(Template LANGUAGES C CXX ASM)
-
-# Each project is expected to have more cmake commands, since it is expected to be more complex, unlike kernel modules which always have the same structure.
+project(init LANGUAGES C CXX ASM)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS ON)
@@ -10,14 +8,10 @@ set(CMAKE_CXX_COMPILER ${CXX_COMPILER})
 set(CMAKE_ASM_COMPILER ${ASM_COMPILER})
 set(CMAKE_C_COMPILER ${ASM_COMPILER})
 
-# Here you'd add source files, or other CMake commands to set up your binary
 file(GLOB_RECURSE SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.c ${CMAKE_CURRENT_SOURCE_DIR}/*.S ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${CRT0}) # CRT0 is only required if this is an executable binary, and not a library
-# or
-# add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES}) if it's a shared library, or
-# add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES}) if it's a static library
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${CRT0})
 
-set(DESTINATION_PATH "${BINARY_OUTPUT_DIR}/${PROJECT_NAME}") # or ${LIBRARY_OUTPUT_DIR} if it's a library
+set(DESTINATION_PATH "${BINARY_OUTPUT_DIR}/${PROJECT_NAME}")
 
 add_custom_command(
         OUTPUT "${DESTINATION_PATH}"

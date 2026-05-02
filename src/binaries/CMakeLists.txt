@@ -16,6 +16,7 @@ set(DEFAULT_C_COMPILE_OPTIONS
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib")
 
+set(CRT0 ${CMAKE_CURRENT_SOURCE_DIR}/lib/crt0/crt0.S)
 add_subdirectory(lib)
 add_subdirectory(bin)
 

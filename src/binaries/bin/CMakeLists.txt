@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.31)
 
 # This gathers all the binaries in the ./common and ./${ARCH} directories, and builds them. Each binary is expected to have a CMakeLists.txt file that defines the binary.
 
+# Set the entry point to _start defined in crt0.S
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -e _start")
+
 file(GLOB MODULE_FOLDERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${ARCH}/*)
 set(OUTPUT_TARGET "")
 set(OUTPUT_TARGETS "")

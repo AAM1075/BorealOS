@@ -13,6 +13,7 @@ namespace IO {
     public:
         void Initialize();
         void PrintString(const char* str);
+        void Write(char *buffer, size_t size);
 
     private:
         limine_framebuffer* framebuffer;

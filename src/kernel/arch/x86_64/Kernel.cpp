@@ -2,6 +2,9 @@
 #include <Kernel.h>
 #include <stdarg.h>
 
+#include "Interrupts/IDT.h"
+#include "Syscalls/Syscalls.h"
+
 extern "C" {
     #include <x86_64/dbg.h> // minidbg
 }
@@ -20,6 +23,17 @@ extern "C" {
 Kernel<KernelData> kernel;
 KernelData kernelData;
 bool debugLogging = false;
+bool enableTicking = false;
+
+extern "C" void apic_timer_handler() {
+    kernelData.Hpet.Tick(); // To make sure the HPET's internal tick count does not overflow.
+
+    // We send the EOI *before* actually finishing this, since the Tick might enter userspace or do something else, which means the APIC interrupt wont resend.
+    kernelData.Apic->SendEOI(Interrupts::APIC::LVT_VECTOR);
+
+    if (kernelData.DefaultScheduler && enableTicking)
+        kernelData.DefaultScheduler->Tick((void*)kernelData.Idt.GetRegistersForInterrupt(Interrupts::APIC::LVT_VECTOR - 0x20));
+}
 
 template<typename T>
 Kernel<T> *Kernel<T>::GetInstance() {
@@ -44,6 +58,7 @@ void Kernel<T>::Initialize() {
 
     // Syscall:
     Interrupts::Syscall::Initialize();
+    Syscalls::SyscallInitialize(); // Load the syscall handlers into the syscall handler array.
     LOG(LOG_LEVEL::INFO, "Initialized syscall handling.");
 
     // PIC:
@@ -90,15 +105,17 @@ void Kernel<T>::Initialize() {
     ArchitectureData->Acpi.Initialize();
     LOG(LOG_LEVEL::INFO, "Initialized ACPI.");
 
-    // APIC:
-    ArchitectureData->Apic = new Interrupts::APIC(&ArchitectureData->Acpi, &ArchitectureData->Cpu, ArchitectureData->Pic, &ArchitectureData->Paging, &ArchitectureData->Idt);
-    ArchitectureData->Apic->Initialize();
-    LOG(LOG_LEVEL::INFO, "Initialized APIC.");
-
     // HPET:
     ArchitectureData->Hpet = Core::Time::HPET(&ArchitectureData->Acpi, &ArchitectureData->Paging, &ArchitectureData->Idt);
     ArchitectureData->Hpet.Initialize();
     LOG(LOG_LEVEL::INFO, "Initialized HPET.");
+
+    // APIC:
+    ArchitectureData->Apic = new Interrupts::APIC(&ArchitectureData->Acpi, &ArchitectureData->Cpu, ArchitectureData->Pic, &ArchitectureData->Paging, &ArchitectureData->Idt, &ArchitectureData->Hpet);
+    ArchitectureData->Apic->Initialize();
+    LOG(LOG_LEVEL::INFO, "Initialized APIC.");
+
+    ArchitectureData->Idt.RegisterIRQHandler(Interrupts::APIC::LVT_VECTOR - 0x20, apic_timer_handler);
 
     // Invariant TSC:
     ArchitectureData->Tsc = Core::Time::TSC(&ArchitectureData->Hpet, &ArchitectureData->Cpu);
@@ -143,6 +160,8 @@ void Kernel<T>::Initialize() {
     ArchitectureData->DriverManager = new Core::Drivers::DriverManager("/ramfs/modules", ArchitectureData->KernelSymbols, ArchitectureData->InitRamFS, &ArchitectureData->Paging, &ArchitectureData->Pmm);
     LOG_INFO("Initialized driver manager.");
 
+    ArchitectureData->Stdio = new FileSystem::STDIO(&ArchitectureData->HeapAllocator);
+
     // Scheduler:
     ArchitectureData->DefaultScheduler = new Core::Time::Scheduler(&ArchitectureData->Tsc);
     LOG_INFO("Initialized scheduler.");
@@ -150,6 +169,9 @@ void Kernel<T>::Initialize() {
     // Load the AML interpreter:
     ArchitectureData->Acpi.LoadLAI();
     LOG_INFO("Initialized ACPI AML interpreter (LAI).");
+
+    ArchitectureData->ProcessManager = new Core::ProcessManager();
+    ArchitectureData->ThreadScheduler = new Core::ThreadScheduler(ArchitectureData->ProcessManager, ArchitectureData->DefaultScheduler);
 }
 
 template<typename T>
@@ -158,8 +180,45 @@ void Kernel<T>::Start() {
     ArchitectureData->DriverManager->LoadDriversFromFileSystem();
     LOG_INFO("Finished loading drivers.");
 
-    // Load userspace:
-    Interrupts::Syscall::Trampoline();
+    FileSystem::InitRam* initRamFS = ArchitectureData->InitRamFS;
+    auto initProcess = initRamFS->Open("/ramfs/bin/init");
+    if (!initProcess) {
+        PANIC("Failed to open init process binary from init ram filesystem! Expected it to be located at /ramfs/bin/init");
+    }
+
+    FileSystem::FileInfo initProcessInfo;
+    if (!initRamFS->GetFileInfo(initProcess, &initProcessInfo)) {
+        PANIC("Failed to get init process binary info from init ram filesystem!");
+    }
+
+    auto testProcessData = new uint8_t[initProcessInfo.size];
+    if (!initRamFS->Read(initProcess, testProcessData, initProcessInfo.size)) {
+        PANIC("Failed to read init process binary data from init ram filesystem!");
+    }
+
+    Core::ProcessManager* pm = ArchitectureData->ProcessManager;
+    Core::ThreadScheduler* ts = ArchitectureData->ThreadScheduler;
+
+    for (size_t i = 0; i < 1; i++) {
+        auto process = pm->CreateProcess(testProcessData, initProcessInfo.size);
+        if (!process) {
+            PANIC("Failed to create init process!");
+        }
+
+        ts->ScheduleProcess(process, {
+            .argv = nullptr,
+            .argc = 0,
+            .currentWorkingDirectory = "/",
+        });
+
+        LOG_INFO("Created and scheduled init process with PID %u64.", process->pid);
+    }
+
+    LOG_INFO("Entering main kernel loop. Should be the last log message you see before the init process starts running.");
+    enableTicking = true;
+
+    while(true)
+        asm("hlt");
 }
 
 template<typename T>

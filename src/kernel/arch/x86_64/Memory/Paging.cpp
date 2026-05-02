@@ -109,9 +109,18 @@ namespace Memory {
         vmmState->pml4 = reinterpret_cast<PML4 *>(stateMemory + Architecture::KernelPageSize); // The PML4 will be stored in the page immediately following the Paging state
         memset((reinterpret_cast<void *>(reinterpret_cast<uint64_t>(vmmState->pml4) + kernelHigherHalfOffset)), 0, sizeof(PML4)); // Clear the PML4
 
-        CopyExistingPageTableToNew(vmmState, 0xFFFFFFFF80000000, kernelHigherHalfOffset);
+        auto* kernelState = reinterpret_cast<PagingState *>(reinterpret_cast<uint64_t>(kernelPagingState) + kernelHigherHalfOffset); // Get the kernel's Paging state, we need to copy the higher half mappings from it.
+        PML4* kernelPml4 = reinterpret_cast<PML4*>(reinterpret_cast<uint64_t>(kernelState->pml4) + kernelHigherHalfOffset);
+        PML4* procPml4 = reinterpret_cast<PML4*>(reinterpret_cast<uint64_t>(vmmState->pml4) + kernelHigherHalfOffset);
+
+        for (int i = 256; i < 512; i++)
+            procPml4->entries[i] = kernelPml4->entries[i];
 
         return reinterpret_cast<PagingState*>(stateMemory);
+    }
+
+    void Paging::DestroyPagingState(PagingState *paging_state) {
+        LOG_ERROR("Destroying paging states is not implemented yet! This will cause a memory leak, but since processes don't currently exit, this is not a problem for now.");
     }
 
     void Paging::SwitchToPageTable(PagingState *state) {
@@ -123,6 +132,13 @@ namespace Memory {
         asm volatile("mov %0, %%cr3" : : "r"(newPml4PhysicalAddress) : "memory"); // Load the new page table into CR3
         asm volatile ("invlpg (%0)" : : "r"(0) : "memory"); // Invalidate the TLB to ensure the new page table is used immediately
         currentPagingState = state;
+    }
+
+    uintptr_t Paging::NextMMIOAddress() {
+        static uintptr_t nextMMIOAddr = 0xFFFFFFFF40000000;
+        uintptr_t addr = nextMMIOAddr;
+        nextMMIOAddr += 0x1000; // Increment by one page for the next MMIO mapping
+        return addr;
     }
 
     // This functions deeply copies the existing page table to a new one.
@@ -181,6 +197,32 @@ namespace Memory {
             uintptr_t nextDstPhys = newTablePhys;
             DeepCopyPageTables(level - 1, nextSrcPhys, nextDstPhys, higherHalfOffset);
         }
+    }
+
+    Paging::AvailableVirtualAddressRange Paging::GetAvailableVirtualAddress(size_t pageCount, uintptr_t start, uintptr_t end) {
+        uintptr_t current = start;
+        size_t foundPages = 0;
+
+        while (current > end) {
+            if (!IsMapped(current)) {
+                foundPages++;
+                if (foundPages == pageCount) {
+                    return { current, current + pageCount * Architecture::KernelPageSize };
+                }
+            } else {
+                foundPages = 0; // Reset count if we find a mapped page
+            }
+            current -= Architecture::KernelPageSize;
+        }
+
+        PANIC("Failed to find available virtual address range!");
+    }
+
+    Paging::AvailableVirtualAddressRange Paging::GetAvailableVirtualAddressKernelSpace(size_t pageCount) {
+        uintptr_t start = kernelHigherHalfOffset;
+        uintptr_t end = 0xFFFFFFFFFFFFF000; // End just below the top of the virtual memory
+
+        return GetAvailableVirtualAddress(pageCount, end, start);
     }
 
     void Paging::MapPage(PagingState *vmmState, PMM *physicalMemoryManager, uint64_t virtualAddress, uint64_t physicalAddress, PageFlags flags, uint64_t

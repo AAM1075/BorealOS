@@ -42,41 +42,46 @@
     pop     r15
 .endm
 
-/* IRQ stub (no error code) */
+/* IRQ stub: Push dummy error code to maintain uniform stack frame */
 .macro mac_IRQStub vector
 .global stub_ISRStub_\vector
 .type stub_ISRStub_\vector, @function
 stub_ISRStub_\vector:
+    push    0                     /* Dummy error code */
     SAVE_REGS
-    mov     rdi, \vector          /* first argument: vector number */
-    xor     rsi, rsi              /* second argument: error code = 0 */
-    mov     rdx, rsp              /* third argument: pointer to saved registers */
-    /* Align stack to 16 bytes and reserve space for call's return address */
-    mov     rbp, rsp              /* save original rsp after SAVE_REGS */
-    and     rsp, -16              /* align to 16 bytes */
-    sub     rsp, 8                /* now rsp ≡ 8 (mod 16) for the upcoming call */
+    mov     rdi, \vector          /* Argument 1: vector */
+    mov     rsi, [rsp + 15*8]    /* Argument 2: error code (now at a fixed offset) */
+    mov     rdx, rsp              /* Argument 3: pointer to Registers struct */
+
+    mov     rbp, rsp
+    and     rsp, -16
+    sub     rsp, 8
     call    IRQHandler
-    mov     rsp, rbp              /* restore original rsp */
+    mov     rsp, rbp
+
     RESTORE_REGS
+    add     rsp, 8                /* Discard dummy error code */
     iretq
 .endm
 
-/* Exception stub with CPU‑pushed error code */
+/* Exception stub with CPU-pushed error code */
 .macro mac_ISRErrStub vector
 .global stub_ISRStub_\vector
 .type stub_ISRStub_\vector, @function
 stub_ISRStub_\vector:
     SAVE_REGS
     mov     rdi, \vector
-    mov     rsi, QWORD PTR [rsp + 15*8]   /* error code is 15 registers above */
+    mov     rsi, [rsp + 15*8]    /* Error code */
     mov     rdx, rsp
+
     mov     rbp, rsp
     and     rsp, -16
     sub     rsp, 8
     call    ExceptionHandler
     mov     rsp, rbp
+
     RESTORE_REGS
-    add     rsp, 8                /* discard the error code */
+    add     rsp, 8                /* Discard hardware error code */
     iretq
 .endm
 
@@ -85,16 +90,20 @@ stub_ISRStub_\vector:
 .global stub_ISRStub_\vector
 .type stub_ISRStub_\vector, @function
 stub_ISRStub_\vector:
+    push    0                     /* Dummy error code */
     SAVE_REGS
     mov     rdi, \vector
-    xor     rsi, rsi              /* error code = 0 */
+    mov     rsi, [rsp + 15*8]
     mov     rdx, rsp
+
     mov     rbp, rsp
     and     rsp, -16
     sub     rsp, 8
     call    ExceptionHandler
     mov     rsp, rbp
+
     RESTORE_REGS
+    add     rsp, 8                /* Discard dummy error code */
     iretq
 .endm
 

@@ -38,7 +38,7 @@ endif()
 
 # Some common compile options:
 set(KERNEL_COMPILE_FLAGS_COMMON
-        -Os
+        -O0
         -ffreestanding
         -fno-asynchronous-unwind-tables
         -fno-stack-protector

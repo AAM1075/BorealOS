@@ -58,7 +58,7 @@ void Kernel<T>::Initialize() {
 
     // Syscall:
     Interrupts::Syscall::Initialize();
-    Syscalls::SyscallInitialize(); // Load the syscall handlers into the syscall handler array.
+    Syscalls::Initialize(); // Load the syscall handlers into the syscall handler array.
     LOG(LOG_LEVEL::INFO, "Initialized syscall handling.");
 
     // PIC:

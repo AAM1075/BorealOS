@@ -21,7 +21,7 @@ namespace Syscalls {
     typedef uint64_t (*SyscallFunction)(void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, Interrupts::Syscall::SyscallFrame* frame);
     constexpr uint32_t MAX_SYSCALLS = 256;
 
-    void SyscallInitialize();
+    void Initialize();
 
     uint64_t SyscallNotImplemented(void* arg1, void* arg2, void* arg3, void* arg4, void* arg5, void* arg6, Interrupts::Syscall::SyscallFrame* frame);
     extern SyscallFunction SyscallTable[MAX_SYSCALLS];

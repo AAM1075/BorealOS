@@ -9,13 +9,13 @@
 
 namespace Syscalls {
     uint64_t SyscallNotImplemented(void *arg1, void *arg2, void *arg3, void *arg4, void *arg5, void *arg6, Interrupts::Syscall::SyscallFrame* frame) {
-        LOG_WARNING("Usage of unimplemented syscall with args: %p, %p, %p, %p, %p, %p, %p", arg1, arg2, arg3, arg4, arg5, arg6, frame);
+        LOG_WARNING("Usage of unimplemented syscall (%u32) with args: %p, %p, %p, %p, %p, %p, %p", frame->rax, arg1, arg2, arg3, arg4, arg5, arg6, frame);
         return -1;
     }
 
     SyscallFunction SyscallTable[Syscalls::MAX_SYSCALLS] = {SyscallNotImplemented};
 
-    void SyscallInitialize() {
+    void Initialize() {
         SyscallTable[(uint64_t)ID::EXIT] = Exit;
         SyscallTable[(uint64_t)ID::YIELD] = Yield;
         SyscallTable[(uint64_t)ID::MMAP] = MMAP;

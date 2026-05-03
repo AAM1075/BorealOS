@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.31)
 project(BorealOS)
 
+# Force the compiler to use C++20
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(NOT ARCH)
     set(ARCH "x86_64")
     message(STATUS "ARCH not specified. Defaulting to x86_64.")

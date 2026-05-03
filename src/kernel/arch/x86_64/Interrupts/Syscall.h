@@ -3,12 +3,15 @@
 
 #include <Definitions.h>
 
+#include "IDT.h"
+
 namespace Interrupts {
 
 class Syscall {
 public:
     static void Initialize();
-    static void Trampoline(); // This jumps into userspace! With a test function at the moment.
+    [[noreturn]] static void EnterUserspace(uint64_t entryPoint, uint64_t userStack);
+    [[noreturn]] static void ResumeThread(IDT::Registers *registers);
 
     struct SyscallFrame {
         uint64_t r15, r14, r13, r12, rbp, rbx;

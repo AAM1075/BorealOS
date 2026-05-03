@@ -71,4 +71,9 @@ namespace IO {
         if (!initialized) return;
         flanterm_write(ftContext, str, Utility::StringFormatter::strlen(str));
     }
+
+    void FramebufferConsole::Write(char *buffer, size_t size) {
+        if (!initialized) return;
+        flanterm_write(ftContext, buffer, size);
+    }
 }

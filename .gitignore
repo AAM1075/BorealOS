@@ -5,3 +5,5 @@
 /logs/
 /ramfs/modules
 /ramfs/kernel.sym
+/ramfs/bin
+/ramfs/lib

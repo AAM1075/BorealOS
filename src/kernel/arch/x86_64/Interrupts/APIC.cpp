@@ -1,14 +1,16 @@
 #include "APIC.h"
 
 #include "../IO/Serial.h"
+#include "Core/Time/HPET.h"
 
 namespace Interrupts {
-    APIC::APIC(Core::Firmware::ACPI* acpi, Core::CPU* cpu, PIC* pic, Memory::Paging* paging, IDT* idt) : _IRQSrcOverrides(256), _IOAPICEntries(256), _IOAPICs(256) {
+    APIC::APIC(Core::Firmware::ACPI* acpi, Core::CPU* cpu, PIC* pic, Memory::Paging* paging, IDT* idt, Core::Time::HPET* hpet) : _IRQSrcOverrides(256), _IOAPICEntries(256), _IOAPICs(256) {
         _paging = paging;
         _acpi = acpi;
         _cpu = cpu;
         _pic = pic;
         _idt = idt;
+        _hpet = hpet;
     }
 
     Core::Firmware::ACPI::MADTIRQSrcOverride* APIC::GetIRQSrcOverride(uint8_t irqNum) {
@@ -172,7 +174,7 @@ namespace Interrupts {
         // Extract the physical APIC base address (bits 12 to 35)
         uint64_t APICBaseIA32 = _cpu->ReadMSR(MSR_IA32_APIC_BASE);
         uint64_t MMIOLAPICPhysAddr = APICBaseIA32 & 0xFFFFFFFFFFFFF000ULL;
-        MMIOLAPICAddr = reinterpret_cast<volatile uint32_t*>(MMIOLAPICPhysAddr);
+        MMIOLAPICAddr = reinterpret_cast<volatile uint32_t*>(Memory::Paging::NextMMIOAddress());
         LOG_DEBUG("MMIO LAPIC address is %p.", MMIOLAPICAddr);
 
         // Check if the system supports x2APIC (bit 10) and that APIC is globally enabled (bit 11)
@@ -183,7 +185,7 @@ namespace Interrupts {
         // Map the LAPIC MMIO region
         if (MMIOLAPICPhysAddr % Architecture::KernelPageSize != 0) PANIC("LAPIC base address is not page aligned!");
         _paging->MapPage(
-            MMIOLAPICPhysAddr,
+            (uintptr_t)MMIOLAPICAddr,
             MMIOLAPICPhysAddr,
             Memory::PageFlags::ReadWrite | Memory::PageFlags::NoExecute | Memory::PageFlags::CacheDisable
         );        
@@ -211,25 +213,29 @@ namespace Interrupts {
         WriteLAPICRegister(ERROR_STATUS_REG_OFFSET, 0x00);
         WriteLAPICRegister(EOI_REG_OFFSET, 0x00);
 
+        // We set the division configuration register to 16, and the initial count register to 10^7; this triggers a very fast interrupt
+        // NOTE: The DivConf register does not take a literal integer divisor, it uses a specific encoding
+        //      see figure 11-10 in section 11.5.4 for the correct values (Intel 64 and IA-32 Software Developer's Manual, Volume 3A, page 401)
+        WriteLAPICRegister(DIVIDE_CONFIG_REG_OFFSET, 0b011);
+        WriteLAPICRegister(INITIAL_COUNT_REG_OFFSET, 0xffffffff); // Max initial count.
+
+        _hpet->BusyWait(1'000'000); // Wait for 1ms to elapse.
+        uint64_t elapsedTicks = 0xffffffff - ReadLAPICRegister(CURRENT_COUNT_REG_OFFSET);
+        WriteLAPICRegister(INITIAL_COUNT_REG_OFFSET, elapsedTicks);
+
         // Now we can set up a vector for the LVT timer, we'll use 0x40 to avoid IRQ conflicts with vectors 0x21-0x2F
-        WriteLAPICRegister(LVT_TIMER_OFFSET, 
+        WriteLAPICRegister(LVT_TIMER_OFFSET,
             LVT_VECTOR
             | (0 << 8)  // Fixed delivery
             | (0 << 16) // Unmasked
             | (1 << 17) // Periodic mode
         );
 
-        // We set the division configuration register to 16, and the initial count register to 10^7; this triggers a very fast interrupt
-        // NOTE: The DivConf register does not take a literal integer divisor, it uses a specific encoding
-        //      see figure 11-10 in section 11.5.4 for the correct values (Intel 64 and IA-32 Software Developer's Manual, Volume 3A, page 401)
-        WriteLAPICRegister(DIVIDE_CONFIG_REG_OFFSET, 0b011);
-        WriteLAPICRegister(INITIAL_COUNT_REG_OFFSET, 10000000);
+        LOG_DEBUG("LAPIC timer calibration: %u64 ticks in 0.1ms, so %u64 ticks per second.", elapsedTicks, elapsedTicks * 10);
 
         // Finally, set the task priority register (TPR) to 0 so no interrupts are blocked
         // NOTE: Interrupts below <TPR value> are blocked, so we set it to 0 becasue there are no interrupts less than 0
         WriteLAPICRegister(TPR_REG_OFFSET, MINIMUM_IRQ_NUM);
-
-
 
         // --- IOAPIC ---
         // Search the MADT's entries to find any IOAPIC (0x01) and ISO (0x02) entries
@@ -275,13 +281,14 @@ namespace Interrupts {
                 PANIC("IOAPIC base address is not page aligned!");
             }
 
+            auto virtAddr = Memory::Paging::NextMMIOAddress();
             _paging->MapPage(
-                entry->ioApicAddress,
+                virtAddr,
                 entry->ioApicAddress,
                 Memory::PageFlags::ReadWrite | Memory::PageFlags::NoExecute | Memory::PageFlags::CacheDisable
             );
 
-            volatile uint32_t* baseAddress = reinterpret_cast<volatile uint32_t*>(entry->ioApicAddress);
+            volatile uint32_t* baseAddress = reinterpret_cast<volatile uint32_t*>(virtAddr);
             uint32_t rawIOAPICVer = ReadIOAPICRegister(baseAddress, IOAPIC_VERSION_REG_OFFSET);
             uint8_t IOAPICVersion = rawIOAPICVer & 0xFF;
             uint8_t redirectionEntryCount = ((rawIOAPICVer >> 16) & 0xFF) + 1;
@@ -301,8 +308,6 @@ namespace Interrupts {
             _IOAPICs.Add(data);
         }
 
-
-
         // --- IRQ SETUP ---
         // Map the first 16 IRQs, these are 1:1 from the legacy PIC IRQs we chose already
         // NOTE: Drivers and other programs are responsible for setting up IRQ handlers and unmasking IRQs
@@ -313,7 +318,6 @@ namespace Interrupts {
         // Tell the IDT that IRQs are handled via the APIC now and not the legacy PIC
         _idt->SetInterruptController(this);
 
-        // Finally, enable interrupts again so this whole init process has a purpose and isn't here for shits and giggles
         asm volatile ("sti");
     }
 }

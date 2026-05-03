@@ -17,10 +17,13 @@
 #include "Core/Firmware/ACPI.h"
 #include "Core/Drivers/DriverManager.h"
 #include <Core/ServiceManager.h>
+#include "Core/ProcessManager.h"
+#include "Core/ThreadScheduler.h"
 #include "Core/Firmware/Hardware.h"
 #include "Core/Time/HPET.h"
 #include "Core/Time/Scheduler.h"
 #include "Core/Time/TSC.h"
+#include "FileSystems/STDIO.h"
 #include "Formats/SymbolLoader.h"
 #include "IO/PCI.h"
 
@@ -45,6 +48,9 @@ struct KernelData {
     Core::Drivers::DriverManager *DriverManager;
     Core::Time::Scheduler *DefaultScheduler; // Core 0 scheduler. Other cores should have their own scheduler instance.
     IO::PCI* Pci;
+    FileSystem::STDIO* Stdio; // stdin, stdout, and stderr.
+    Core::ProcessManager* ProcessManager;
+    Core::ThreadScheduler* ThreadScheduler;
 };
 
 #endif //BOREALOS_KERNELDATA_H

@@ -30,6 +30,12 @@ namespace Memory {
     class Paging {
     public:
         struct PagingState;
+
+        struct AvailableVirtualAddressRange {
+            uint64_t start;
+            uint64_t end;
+        };
+
         explicit Paging(PMM* pmm);
 
         /// Kernel virtual memory management initialization. To use the Paging for a process we must use a different function
@@ -51,7 +57,14 @@ namespace Memory {
         [[nodiscard]] PagingState* GetKernelPagingState() const { return kernelPagingState; }
         [[nodiscard]] PagingState* GetCurrentPagingState() const { return currentPagingState; }
         [[nodiscard]] PagingState* CreatePagingStateForProcess();
+        void DestroyPagingState(PagingState * paging_state);
         void SwitchToPageTable(PagingState* newState);
+
+        static uintptr_t NextMMIOAddress();
+
+        AvailableVirtualAddressRange GetAvailableVirtualAddress(size_t pageCount, uintptr_t start, uintptr_t end);
+        AvailableVirtualAddressRange GetAvailableVirtualAddressKernelSpace(size_t pageCount);
+
     private:
         PMM* physicalMemoryManager;
         PagingState* kernelPagingState; // The Paging state for the kernel! When we are in kernel mode this will be used.
@@ -72,7 +85,6 @@ namespace Memory {
 
         static constexpr uint64_t PointerMask = 0x000FFFFFFFFFF000; // Mask to get the address portion of a page table entry
         static constexpr uint64_t FlagsMask = 0xFFF0000000000FFF; // Mask to get the flags portion of a page table entry
-
 
         struct PT  { uint64_t entries[512]; } ALIGNED(0x1000);
 

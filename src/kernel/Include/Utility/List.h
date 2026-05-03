@@ -8,14 +8,21 @@ namespace Utility {
     template<typename T>
     class List {
     public:
+
         List(size_t capacity = 16) : _size(0), _capacity(capacity) {
             _data = new T[_capacity];
         }
         ~List() {
             delete[] _data;
         }
+
         List(const List&) = delete;
         List& operator=(const List&) = delete;
+
+        // Remove all other constructors and destructors
+        List(List&&) = delete;
+        List& operator=(List&&) = delete;
+        List() = delete;
 
         void Add(const T& item) {
             if (_size >= _capacity) {
@@ -34,6 +41,15 @@ namespace Utility {
             _size--;
         }
 
+        void Remove(const T& item) {
+            for (size_t i = 0; i < _size; i++) {
+                if (_data[i] == item) {
+                    Remove(i);
+                    return;
+                }
+            }
+        }
+
         T& operator[](size_t index) {
             if (index >= _size) {
                 // Out of bounds, since this is a kernel, we should panic since this might be a vulnerability if we just return a reference to some random memory.
@@ -50,6 +66,19 @@ namespace Utility {
             }
 
             return _data[index];
+        }
+
+        size_t IndexOf(T thread) const {
+            for (size_t i = 0; i < _size; i++) {
+                if (_data[i] == thread) {
+                    return i;
+                }
+            }
+            return -1; // Not found
+        }
+
+        void Clear() {
+            _size = 0;
         }
 
         [[nodiscard]] size_t Size() const { return _size; }

@@ -134,10 +134,7 @@ namespace Memory {
     }
 
     uintptr_t Paging::NextMMIOAddress() {
-        static uintptr_t nextMMIOAddr = 0xFFFFFFFF40000000;
-        uintptr_t addr = nextMMIOAddr;
-        nextMMIOAddr += 0x1000; // Increment by one page for the next MMIO mapping
-        return addr;
+        return Kernel<KernelData>::GetInstance()->ArchitectureData->Paging.GetAvailableVirtualAddressKernelSpace(1).start;
     }
 
     // This functions deeply copies the existing page table to a new one.

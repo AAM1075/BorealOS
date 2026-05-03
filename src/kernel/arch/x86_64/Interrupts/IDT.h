@@ -27,6 +27,12 @@ namespace Interrupts {
 #pragma pack(push, 1)
         struct Registers {
             uint64_t rax, rbx, rcx, rdx, rsi, rdi, rbp, r8, r9, r10, r11, r12, r13, r14, r15;
+            uint64_t error_code;
+            uint64_t rip;
+            uint64_t cs;
+            uint64_t rflags;
+            uint64_t user_rsp; /* The RSP of the process that was interrupted */
+            uint64_t ss;
         };
 #pragma pack(pop)
 
@@ -41,12 +47,14 @@ namespace Interrupts {
         void MaskIRQ(uint8_t uint8) const;
         void SetInterruptController(InterruptController* ic);
         void SetPagingManager(Memory::Paging* paging) { _paging = paging; _pagingInitialized = true; }
+        [[nodiscard]] const Registers *GetRegistersForInterrupt(uint8_t interruptVector) const;
 
     private:
         InterruptController* _ic;
         IDTPointer _idtPointer = {0, 0};
         void (*_exceptionHandlers[32])(void) = { nullptr };
         void (*_irqHandlers[256])(void) = { nullptr };
+        Registers* _registersForInterrupts[256] = {}; // This is used to store the register state for the currently handled interrupt, so that it can be accessed by the exception handler (for exceptions) or the IRQ handler (for IRQs) if needed. It is indexed by the interrupt vector number.
         void SetIDTEntry(uint8_t vector, uint64_t isr, uint8_t flags);
         bool _isTesting = false;
 

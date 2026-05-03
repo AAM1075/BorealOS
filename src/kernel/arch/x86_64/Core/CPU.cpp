@@ -73,7 +73,7 @@ namespace Core {
     int TestSSE() {
         float a[4] = {1.0f, 2.0f, 3.0f, 4.0f};
         float b[4] = {5.0f, 6.0f, 7.0f, 8.0f};
-        float r[4];
+        float r[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
         // Perform SSE arithmetic
         __asm__ volatile (

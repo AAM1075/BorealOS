@@ -2,24 +2,25 @@
 #define BOREALOS_SCHEDULER_H
 
 #include <Definitions.h>
+#include <Core/TimeScheduler.h>
 #include "TSC.h"
 
 namespace Core::Time {
-    class Scheduler {
+    class Scheduler final : public TimeScheduler {
     public:
-        typedef void (*TaskFunction)(void* context);
-
         explicit Scheduler(TSC *tsc);
 
-        void ScheduleTask(TaskFunction function, void* context, uint64_t delayNs);
-        void Tick();
+        void ScheduleTask(TaskFunction function, void* context, uint64_t delayNs, bool repeat) override;
+        void Tick(void *platformData) override;
     private:
         TSC *_tsc;
 
         struct Task {
             uint64_t endTime; // In nanoseconds.
+            uint64_t delay;
             TaskFunction function;
             void* context;
+            bool repeat;
         };
 
         /// Basic min-heap implementation for storing scheduled tasks, sorted by endTime. The task with the earliest endTime is at the top of the heap.

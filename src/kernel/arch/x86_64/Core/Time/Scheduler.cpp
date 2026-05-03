@@ -6,14 +6,16 @@ namespace Core::Time {
 
     }
 
-    void Scheduler::ScheduleTask(TaskFunction function, void *context, uint64_t delayNs) {
+    void Scheduler::ScheduleTask(TaskFunction function, void *context, uint64_t delayNs, bool repeat) {
         uint64_t currentNs = _tsc->GetNanoseconds();
         uint64_t endNs = currentNs + delayNs;
 
         Task newTask {
             .endTime = endNs,
+            .delay = delayNs,
             .function = function,
-            .context = context
+            .context = context,
+            .repeat = repeat
         };
 
         if (endNs < currentNs) {
@@ -24,7 +26,7 @@ namespace Core::Time {
         InsertTask(newTask);
     }
 
-    void Scheduler::Tick() {
+    void Scheduler::Tick(void *platformData) {
         uint64_t currentNs = _tsc->GetNanoseconds();
         while (!_taskHeap.IsEmpty()) {
             Task* nextTask = _taskHeap.Peek();
@@ -33,9 +35,14 @@ namespace Core::Time {
                 break;
             }
 
-            // The next task is scheduled for now or the past, so we should execute it.
-            _taskHeap.Pop(); // Remove the task from the heap
-            nextTask->function(nextTask->context);
+            // The next task is ready to be executed, so pop it from the heap and execute it.
+            Task taskToExecute = *_taskHeap.Pop();
+
+            if (taskToExecute.repeat) {
+                ScheduleTask(taskToExecute.function, taskToExecute.context, taskToExecute.delay, true);
+            }
+
+            taskToExecute.function(taskToExecute.context, platformData);
         }
     }
 

@@ -6,7 +6,14 @@
 
 /// Abstract interface for a file system.
 namespace FileSystem {
+    class FileSystemInterface;
+
     struct File; // Opaque file struct, the actual definition is up to the implementation of the FileSystem.
+    struct Descriptor {
+        File* file; // The file that this descriptor refers to.
+        FileSystemInterface* fs; // The file system that this descriptor belongs to, used to perform operations on the file.
+        size_t offset; // The current offset in the file for read/write operations.
+    };
 
     struct FileInfo {
         size_t size = 0; // The size of the file in bytes.

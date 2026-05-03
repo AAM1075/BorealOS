@@ -373,6 +373,21 @@ namespace Formats {
         [[nodiscard]] bool IsValid() const { return _isValid; }
         [[nodiscard]] const void* GetHeader() const { return _data; }
         [[nodiscard]] size_t GetSize() const { return _size; }
+        [[nodiscard]] const uint8_t* GetData() const { return _data; }
+        [[nodiscard]] uintptr_t GetEntryPoint() const {
+            if (!IsValid()) return 0;
+            if (_data[EI_CLASS] == ELFCLASS32) {
+                auto header = reinterpret_cast<const Elf32_Ehdr*>(_data);
+                return header->e_entry;
+            }
+
+            if (_data[EI_CLASS] == ELFCLASS64) {
+                auto header = reinterpret_cast<const Elf64_Ehdr*>(_data);
+                return header->e_entry;
+            }
+
+            return 0;
+        }
 
     private:
         bool _isValid;

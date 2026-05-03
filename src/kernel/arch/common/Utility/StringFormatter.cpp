@@ -13,6 +13,10 @@ namespace Utility {
         if (size == 0)
             return 0;
 
+        if (buf == nullptr || fmt == nullptr) {
+            return 0;
+        }
+
         size_t pos = 0;
         size_t max_pos = size - 1; // Reserve space for null terminator
 
@@ -202,6 +206,10 @@ namespace Utility {
     }
 
     uint32_t StringFormatter::strlen(const char* str) {
+        if (str == nullptr) {
+            return 0;
+        }
+
         uint32_t len = 0;
         while (str[len] != '\0') {
             len++;
@@ -210,6 +218,10 @@ namespace Utility {
     }
 
     size_t StringFormatter::HexToSize(const char *hexStr, size_t length) {
+        if (hexStr == nullptr || length == 0) {
+            return 0;
+        }
+
         size_t val = 0;
         for (size_t i = 0; i < length; i++) {
             char c = hexStr[i];
@@ -224,6 +236,10 @@ namespace Utility {
     }
     
     void StringFormatter::TrimTrailingSpaces(char* str, uint64_t strLength) {
+        if (str == nullptr || strLength == 0) {
+            return;
+        }
+
         // Null terminate the string
         str[strLength] = '\0';
 
@@ -237,6 +253,10 @@ namespace Utility {
     }
 
     void StringFormatter::Split(const char* str, char delimiter, Utility::List<const char*>& parts) {
+        if (str == nullptr) {
+            return;
+        }
+
         uint32_t length = strlen(str);
 
         char* copy = new char[length + 1];

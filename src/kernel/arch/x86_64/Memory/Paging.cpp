@@ -15,6 +15,7 @@ namespace Memory {
         kernelPagingState = nullptr;
         currentPagingState = nullptr;
         kernelHigherHalfOffset = hhdm_request.response->offset;
+        kernelElfOffset = 0XFFFFFFFF80000000;
     }
 
     void Paging::Initialize() {
@@ -30,7 +31,6 @@ namespace Memory {
         vmmState->pml4 = reinterpret_cast<PML4 *>(stateMemory + Architecture::KernelPageSize); // The PML4 will be stored in the page immediately following the Paging state
         memset((reinterpret_cast<void *>(reinterpret_cast<uint64_t>(vmmState->pml4) + kernelHigherHalfOffset)), 0, sizeof(PML4)); // Clear the PML4
 
-        uint64_t kernelElfOffset = 0XFFFFFFFF80000000;
         CopyExistingPageTableToNew(vmmState, kernelElfOffset, kernelHigherHalfOffset);
 
         LOG_DEBUG("Copied over kernel ELF mappings to the Paging's PML4. Now switching to the new page table...");
@@ -55,8 +55,7 @@ namespace Memory {
         UnmapPage(vmmState, physicalMemoryManager, virtualAddress, kernelHigherHalfOffset);
     }
 
-    void Paging::MapPages(uint64_t virtualAddressStart, uint64_t physicalAddressStart, size_t pageCount,
-                          PageFlags flags) {
+    void Paging::MapPages(uint64_t virtualAddressStart, uint64_t physicalAddressStart, size_t pageCount, PageFlags flags) {
         for (size_t i = 0; i < pageCount; i++) {
             MapPage(virtualAddressStart + i * Architecture::KernelPageSize, physicalAddressStart + i * Architecture::KernelPageSize, flags);
         }
@@ -108,7 +107,7 @@ namespace Memory {
         auto* vmmState = reinterpret_cast<PagingState *>(stateMemory + kernelHigherHalfOffset); // make it accessible.
         vmmState->pml4 = reinterpret_cast<PML4 *>(stateMemory + Architecture::KernelPageSize); // The PML4 will be stored in the page immediately following the Paging state
         memset((reinterpret_cast<void *>(reinterpret_cast<uint64_t>(vmmState->pml4) + kernelHigherHalfOffset)), 0, sizeof(PML4)); // Clear the PML4
-
+      
         auto* kernelState = reinterpret_cast<PagingState *>(reinterpret_cast<uint64_t>(kernelPagingState) + kernelHigherHalfOffset); // Get the kernel's Paging state, we need to copy the higher half mappings from it.
         PML4* kernelPml4 = reinterpret_cast<PML4*>(reinterpret_cast<uint64_t>(kernelState->pml4) + kernelHigherHalfOffset);
         PML4* procPml4 = reinterpret_cast<PML4*>(reinterpret_cast<uint64_t>(vmmState->pml4) + kernelHigherHalfOffset);
@@ -340,4 +339,3 @@ namespace Memory {
         pageIndex = vaddr & 0xFFF; // lower 12 bits are the offset within the page
     }
 } // Memory
-

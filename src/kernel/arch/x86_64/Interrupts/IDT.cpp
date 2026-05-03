@@ -108,8 +108,6 @@ namespace Interrupts {
         }
 
         _registersForInterrupts[irq] = registers; // Save the register state for this interrupt so that it can be accessed by the handler if needed
-
-        //LOG_DEBUG("IRQ %u8", irq);
         if (_irqHandlers[irq] != nullptr) {
             _irqHandlers[irq]();
         }

@@ -47,18 +47,21 @@ namespace Core {
             .file = _kernel->ArchitectureData->Stdio->GetStdin(),
             .fs = _kernel->ArchitectureData->Stdio,
             .offset = 0,
+            .flags = FileSystem::OpenFlags::Read,
         });
 
         process->openFiles.Add(new FileSystem::Descriptor {
             .file = _kernel->ArchitectureData->Stdio->GetStdout(),
             .fs = _kernel->ArchitectureData->Stdio,
             .offset = 0,
+            .flags = FileSystem::OpenFlags::Write,
         });
 
         process->openFiles.Add(new FileSystem::Descriptor {
             .file = _kernel->ArchitectureData->Stdio->GetStderr(),
             .fs = _kernel->ArchitectureData->Stdio,
             .offset = 0,
+            .flags = FileSystem::OpenFlags::Write,
         });
 
         return process;

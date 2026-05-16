@@ -43,6 +43,7 @@ struct KernelData {
     Interrupts::APIC *Apic;
     Core::Time::TSC Tsc {&Hpet, &Cpu};
     FileSystem::InitRam* InitRamFS;
+    FileSystem::VirtualFileSystem *VFS;
     Formats::SymbolLoader *KernelSymbols;
     Core::ServiceManager *ServiceManager;
     Core::Drivers::DriverManager *DriverManager;

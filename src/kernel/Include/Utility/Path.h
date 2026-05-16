@@ -2,6 +2,7 @@
 #define BOREALOS_PATH_H
 
 #include <Definitions.h>
+#include "StringView.h"
 
 namespace Utility {
     class Path {
@@ -9,6 +10,7 @@ namespace Utility {
         static size_t GetMaxComponentLength(const char* path, char delimiter);
         static size_t GetComponentCount(const char* path, char delimiter);
         static size_t SplitPath(const char* path, char delimiter, const char** components);
+        static void SplitPath(const char* string, char c, StringView *array);
     };
 }
 

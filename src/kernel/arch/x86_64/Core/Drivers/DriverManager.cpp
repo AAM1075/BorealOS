@@ -34,9 +34,11 @@ namespace Core::Drivers {
         // Convert the files from raw data, to elf modules, and filter out the invalid ones.
         for (size_t i = 0; i < count; i++) {
             const char* driverPath = drivers[i];
+            FileSystem::FSResult fsresult = FileSystem::FSResult::SUCCESS;
 
-            auto file = _fileSystem->Open(driverPath);
-            if (!file) {
+            FileSystem::File* file = nullptr;
+            fsresult = _fileSystem->Open(driverPath, FileSystem::OpenFlags::Read, &file, FileSystem::FileMode::File);
+            if (!file || fsresult != FileSystem::FSResult::SUCCESS) {
                 LOG_ERROR("Failed to open driver file %s!", driverPath);
                 continue;
             }
@@ -45,7 +47,7 @@ namespace Core::Drivers {
             _fileSystem->GetFileInfo(file, &info);
 
             auto fileData = new uint8_t[info.size];
-            _fileSystem->Read(file, fileData, info.size);
+            _fileSystem->Read(file, fileData, info.size, 0, nullptr);
 
             Formats::ELF elf(fileData, info.size);
             if (!elf.IsValid()) {
@@ -423,14 +425,17 @@ namespace Core::Drivers {
     }
 
     const char **DriverManager::GetDriversInDirectory(const char *str, size_t &count) const {
-        auto dir = _fileSystem->Open(str);
-        if (!dir) {
+        FileSystem::FSResult fsresult = FileSystem::FSResult::SUCCESS;
+        FileSystem::File* dir = nullptr;
+        fsresult = _fileSystem->Open(str, FileSystem::OpenFlags::Read, &dir, FileSystem::FileMode::Directory);
+
+        if (!dir || fsresult != FileSystem::FSResult::SUCCESS) {
             count = 0;
             return nullptr;
         }
 
         FileSystem::DirectoryInfo info;
-        if (!_fileSystem->GetDirectoryInfo(dir, &info)) {
+        if (_fileSystem->GetDirectoryInfo(dir, &info) != FileSystem::FSResult::SUCCESS) {
             count = 0;
             return nullptr;
         }

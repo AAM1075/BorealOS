@@ -5,18 +5,23 @@
 #include "Boot/c_limine.h"
 
 namespace FileSystem {
-    class InitRam : public FileSystemInterface {
+    class InitRam final : public FileSystemInterface {
     public:
         explicit InitRam(limine_file* cpioArchive, Allocator *allocator);
 
         [[nodiscard]] Capabilities GetCapabilities() const override;
-        [[nodiscard]] File* Open(const char *path) override;
-        size_t Read(File *file, void *buffer, size_t size) override;
-        size_t Write(File *file, const void *buffer, size_t size) override;
-        bool GetFileInfo(File *file, FileInfo *info) override;
-        bool GetDirectoryInfo(File *file, DirectoryInfo *info) override;
+        [[nodiscard]] FSResult Open(Utility::StringView path, OpenFlags flags, File **outFile, FileMode mode) override;
+
+        FSResult Read(File *file, void *buffer, size_t size, size_t offset, size_t *outReadBytes) override;
+
+        FSResult Write(File *file, const void *buffer, size_t size, size_t offset, size_t *outWrittenBytes) override;
+
+        FSResult GetFileInfo(File *file, FileInfo *info) override;
+
+        FSResult GetDirectoryInfo(File *file, DirectoryInfo *info) override;
         void FreeDirectoryInfo(DirectoryInfo *info) override;
-        void Close(File *file) override;
+
+        FSResult Close(File *file) override;
 
     private:
         static constexpr char CpioNewcMagic[] = "070701";

@@ -28,8 +28,9 @@ namespace Syscalls {
             return -1; // Invalid file descriptor
         }
 
-        auto result = descriptor->fs->Read(descriptor->file, buffer, count);
-        if (result == (size_t)-1) {
+        size_t read = 0;
+        auto result = descriptor->fs->Read(descriptor->file, buffer, count, 0, &read);
+        if (result != FileSystem::FSResult::SUCCESS) {
             return -1; // Write failed
         }
 

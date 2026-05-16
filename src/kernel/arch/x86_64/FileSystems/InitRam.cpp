@@ -115,48 +115,68 @@ namespace FileSystem {
         return {true, false}; // Can read, can't write
     }
 
-    FileSystem::File* InitRam::Open(const char *path) {
-        if (strcmp(path, "/") == 0) {
-            return _files[_fileCount - 1]; // The last file is the root directory
+    FSResult InitRam::Open(Utility::StringView path, OpenFlags flags, File **outFile, FileMode mode) {
+        if (path.Data()[0] == '/' && path.Size() == 1) {
+            *outFile = _files[_fileCount - 1]; // The last file is the root directory
+            return FSResult::SUCCESS;
         }
 
-        if (path[0] == '/') {
-            path++; // Skip the leading '/' since our file paths don't have it
+        if (path.Data()[0] == '/') {
+            path = Utility::StringView(path.Data() + 1, path.Size() - 1); // Remove leading slash for easier matching
         }
 
-        for (size_t i = 0; _files[i] != nullptr; i++) {
-            if (strcmp(_files[i]->path, path) == 0) {
-                return _files[i];
+        for (size_t i = 0; i < _fileCount; i++) {
+            if (Utility::StringView(_files[i]->path) == path) {
+                *outFile = _files[i];
+                return FSResult::SUCCESS;
             }
         }
 
-        return nullptr; // File not found
+        *outFile = nullptr;
+        return FSResult::MISSING_ENTRY;
     }
 
-    size_t InitRam::Read(File *file, void *buffer, size_t size) {
+    FSResult InitRam::Read(File *file, void *buffer, size_t size, size_t offset, size_t *outReadBytes) {
         auto* p = reinterpret_cast<const char*>(reinterpret_cast<uintptr_t>(_cpioArchive->address) + file->offset);
 
-        if (size > file->size) {
-            size = file->size; // Don't read past the end of the file
+        if (size + offset > file->size) {
+            size = file->size - offset; // Adjust size to read only up to the end of the file
         }
 
-        memcpy(buffer, p, size);
-        return size;
+        memcpy(buffer, p + offset, size);
+        if (outReadBytes)
+            *outReadBytes = size;
+
+        return FSResult::SUCCESS;
     }
 
-    size_t InitRam::Write(File *file, const void *buffer, size_t size) {
-        return -1; // Writing is not supported
+    FSResult InitRam::Write(File *file, const void *buffer, size_t size, size_t offset, size_t *outWrittenBytes) {
+        if (outWrittenBytes)
+            *outWrittenBytes = 0;
+
+        return FSResult::UNSUPPORTED; // This filesystem is read-only
     }
 
-    bool InitRam::GetFileInfo(File *file, FileInfo *info) {
+    FSResult InitRam::GetFileInfo(File *file, FileInfo *info) {
         info->size = file->size;
-        info->isDirectory = file->isDirectory;
-        return true;
+
+        if (file->isDirectory) {
+            info->mode = S_IFDIR;
+        } else {
+            info->mode = S_IFREG;
+        }
+
+        // Set permissions to read and execute but no write
+        info->mode |= 0b101'101'101; // rwxr-xr-x
+        info->ownerUserId = 0; // root
+        info->ownerGroupId = 0; // root
+
+        return FSResult::SUCCESS;
     }
 
-    bool InitRam::GetDirectoryInfo(File *file, DirectoryInfo *info) {
+    FSResult InitRam::GetDirectoryInfo(File *file, DirectoryInfo *info) {
         if (!file->isDirectory) {
-            return false; // Not a directory
+            return FSResult::NOT_A_DIRECTORY;
         }
 
         info->entryCount = file->size;
@@ -171,14 +191,15 @@ namespace FileSystem {
             }
         }
 
-        return true;
+        return FSResult::SUCCESS;
     }
 
     void InitRam::FreeDirectoryInfo(DirectoryInfo *info) {
         delete[] info->entries;
     }
 
-    void InitRam::Close(File *file) {
+    FSResult InitRam::Close(File *file) {
         // Does nothing, we preloaded the entire archive into memory.
+        return FSResult::SUCCESS;
     }
 } // FileSystems

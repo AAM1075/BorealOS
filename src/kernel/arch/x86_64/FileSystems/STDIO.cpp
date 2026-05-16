@@ -19,18 +19,20 @@ namespace FileSystem {
         return {true, true};
     }
 
-    File *STDIO::Open(const char *path) {
-        return nullptr;
+    FSResult STDIO::Open(Utility::StringView path, OpenFlags flags, File **outFile, FileMode mode) {
+        return FSResult::UNSUPPORTED;
     }
 
-    size_t STDIO::Read(File *file, void *buffer, size_t size) {
-        return -1; // Reading is not supported yet
+    FSResult STDIO::Read(File *file, void *buffer, size_t size, size_t offset, size_t *outReadBytes) {
+        if (outReadBytes)
+            *outReadBytes = 0;
+        return FSResult::UNSUPPORTED;
         // TODO: When the HID service is available, we can use that to read input.
     }
 
-    size_t STDIO::Write(File *file, const void *buffer, size_t size) {
+    FSResult STDIO::Write(File *file, const void *buffer, size_t size, size_t offset, size_t *outWrittenBytes) {
         if (file->canWrite == false) {
-            return -1; // Can't write to this file
+            return FSResult::WRITE_PERMISSION;
         }
 
         auto kernel = Kernel<KernelData>::GetInstance();
@@ -40,22 +42,24 @@ namespace FileSystem {
         }
 
         console->Write((char*)buffer, size);
-        return size;
+        if (outWrittenBytes)
+            *outWrittenBytes = size;
+        return FSResult::SUCCESS;
     }
 
-    bool STDIO::GetFileInfo(File *file, FileInfo *info) {
-        return false;
+    FSResult STDIO::GetFileInfo(File *file, FileInfo *info) {
+        return FSResult::UNSUPPORTED;
     }
 
-    bool STDIO::GetDirectoryInfo(File *file, DirectoryInfo *info) {
-        return false;
+    FSResult STDIO::GetDirectoryInfo(File *file, DirectoryInfo *info) {
+        return FSResult::UNSUPPORTED;
     }
 
     void STDIO::FreeDirectoryInfo(DirectoryInfo *info) {
 
     }
 
-    void STDIO::Close(File *file) {
-
+    FSResult STDIO::Close(File *file) {
+        return FSResult::UNSUPPORTED;
     }
 }

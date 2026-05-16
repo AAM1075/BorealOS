@@ -14,19 +14,19 @@ namespace FileSystem {
 
         [[nodiscard]] Capabilities GetCapabilities() const override;
 
-        [[nodiscard]] File *Open(const char *path) override;
+        [[nodiscard]] FSResult Open(Utility::StringView path, OpenFlags flags, File **outFile, FileMode mode) override;
 
-        size_t Read(File *file, void *buffer, size_t size) override;
+        FSResult Read(File *file, void *buffer, size_t size, size_t offset, size_t *outReadBytes) override;
 
-        size_t Write(File *file, const void *buffer, size_t size) override;
+        FSResult Write(File *file, const void *buffer, size_t size, size_t offset, size_t *outWrittenBytes) override;
 
-        bool GetFileInfo(File *file, FileInfo *info) override;
+        FSResult GetFileInfo(File *file, FileInfo *info) override;
 
-        bool GetDirectoryInfo(File *file, DirectoryInfo *info) override;
+        FSResult GetDirectoryInfo(File *file, DirectoryInfo *info) override;
 
         void FreeDirectoryInfo(DirectoryInfo *info) override;
 
-        void Close(File *file) override;
+        FSResult Close(File *file) override;
 
         [[nodiscard]] File* GetStdin() const { return _stdin; }
         [[nodiscard]] File* GetStdout() const { return _stdout; }

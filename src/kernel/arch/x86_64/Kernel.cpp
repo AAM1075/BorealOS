@@ -4,6 +4,7 @@
 
 #include "Interrupts/IDT.h"
 #include "Syscalls/Syscalls.h"
+#include "Utility/HashMap.h"
 
 extern "C" {
     #include <x86_64/dbg.h> // minidbg
@@ -136,20 +137,20 @@ void Kernel<T>::Initialize() {
     ArchitectureData->InitRamFS = new FileSystem::InitRam(cpioArchive, &ArchitectureData->HeapAllocator);
     LOG_INFO("Initialized initramfs.");
 
-    // Kernel symbols:
-    auto symbolTable = ArchitectureData->InitRamFS->Open("/ramfs/kernel.sym");
-    if (!symbolTable) {
-        PANIC("Failed to open kernel symbol table from init ram filesystem! Expected it to be located at /ramfs/kernel.sym");
-    }
-    FileSystem::FileInfo symbolTableInfo;
-    if (!ArchitectureData->InitRamFS->GetFileInfo(symbolTable, &symbolTableInfo)) {
-        PANIC("Failed to get kernel symbol table info from init ram filesystem!");
+    // VFS:
+    ArchitectureData->VFS = new FileSystem::VirtualFileSystem();
+    if (ArchitectureData->VFS->Mount("initramfs", ArchitectureData->InitRamFS) != FileSystem::FSResult::SUCCESS) {
+        PANIC("Failed to mount init ram filesystem to virtual filesystem!");
     }
 
+    LOG_INFO("Mounted initramfs to virtual filesystem with prefix \"initramfs:/\".");
+
+    // Kernel symbols:
+    auto symbolTable = ArchitectureData->InitRamFS->OpenOrPanic("/ramfs/kernel.sym");
+    FileSystem::FileInfo symbolTableInfo = ArchitectureData->InitRamFS->GetFileInfoOrPanic(symbolTable);
+
     auto symbolTableData = new uint8_t[symbolTableInfo.size];
-    if (!ArchitectureData->InitRamFS->Read(symbolTable, symbolTableData, symbolTableInfo.size)) {
-        PANIC("Failed to read kernel symbol table data from init ram filesystem!");
-    }
+    ArchitectureData->InitRamFS->ReadOrPanic(symbolTable, symbolTableData, symbolTableInfo.size);
     ArchitectureData->KernelSymbols = new Formats::SymbolLoader(symbolTableData, symbolTableInfo.size);
     LOG_INFO("Initialized kernel symbol loader with %u64 symbols.", ArchitectureData->KernelSymbols->GetSymbolCount());
 
@@ -180,42 +181,42 @@ void Kernel<T>::Start() {
     ArchitectureData->DriverManager->LoadDriversFromFileSystem();
     LOG_INFO("Finished loading drivers.");
 
-    FileSystem::InitRam* initRamFS = ArchitectureData->InitRamFS;
-    auto initProcess = initRamFS->Open("/ramfs/bin/init");
-    if (!initProcess) {
-        PANIC("Failed to open init process binary from init ram filesystem! Expected it to be located at /ramfs/bin/init");
+    FileSystem::VirtualFileSystem *vfs = ArchitectureData->VFS;
+    FileSystem::Descriptor initProcessDescriptor{};
+    auto result = vfs->Open("initramfs:/ramfs/bin/init", FileSystem::OpenFlags::Read, &initProcessDescriptor);
+    if (result != FileSystem::FSResult::SUCCESS) {
+        LOG_ERROR("Failed to open init process from virtual filesystem. Error code: %u32", static_cast<uint32_t>(result));
     }
 
-    FileSystem::FileInfo initProcessInfo;
-    if (!initRamFS->GetFileInfo(initProcess, &initProcessInfo)) {
-        PANIC("Failed to get init process binary info from init ram filesystem!");
+    FileSystem::FileInfo initProcessInfo{};
+    result = vfs->GetFileInfo(&initProcessDescriptor, &initProcessInfo);
+    if (result != FileSystem::FSResult::SUCCESS) {
+        LOG_ERROR("Failed to get file info for init process from virtual filesystem. Error code: %u32", static_cast<uint32_t>(result));
     }
 
-    auto testProcessData = new uint8_t[initProcessInfo.size];
-    if (!initRamFS->Read(initProcess, testProcessData, initProcessInfo.size)) {
-        PANIC("Failed to read init process binary data from init ram filesystem!");
+    auto initProcessData = new uint8_t[initProcessInfo.size];
+    if (vfs->Read(&initProcessDescriptor, initProcessData, initProcessInfo.size, nullptr) != FileSystem::FSResult::SUCCESS) {
+        PANIC("Failed to read init process from virtual filesystem!");
     }
 
     Core::ProcessManager* pm = ArchitectureData->ProcessManager;
     Core::ThreadScheduler* ts = ArchitectureData->ThreadScheduler;
 
-    for (size_t i = 0; i < 1; i++) {
-        auto process = pm->CreateProcess(testProcessData, initProcessInfo.size);
-        if (!process) {
-            PANIC("Failed to create init process!");
-        }
-
-        ts->ScheduleProcess(process, {
-            .argv = nullptr,
-            .argc = 0,
-            .currentWorkingDirectory = "/",
-        });
-
-        LOG_INFO("Created and scheduled init process with PID %u64.", process->pid);
+    auto process = pm->CreateProcess(initProcessData, initProcessInfo.size);
+    if (!process) {
+        PANIC("Failed to create init process!");
     }
 
+    ts->ScheduleProcess(process, {
+        .argv = nullptr,
+        .argc = 0,
+        .currentWorkingDirectory = "/",
+    });
+
+    LOG_INFO("Created and scheduled init process with PID %u64.", process->pid);
+
     LOG_INFO("Entering main kernel loop. Should be the last log message you see before the init process starts running.");
-    enableTicking = true;
+    // enableTicking = true;
 
     while(true)
         asm("hlt");

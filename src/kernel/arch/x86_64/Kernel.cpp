@@ -216,7 +216,7 @@ void Kernel<T>::Start() {
     LOG_INFO("Created and scheduled init process with PID %u64.", process->pid);
 
     LOG_INFO("Entering main kernel loop. Should be the last log message you see before the init process starts running.");
-    // enableTicking = true;
+    enableTicking = true;
 
     while(true)
         asm("hlt");

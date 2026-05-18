@@ -6,6 +6,11 @@ namespace Utility {
         const char* p = path;
 
         while (*p) {
+            if (p == path && *p == delimiter) {
+                p++; // Skip leading delimiter
+                continue;
+            }
+
             while (*p == delimiter) p++; // Skip consecutive delimiters
             if (*p) {
                 count++;
@@ -58,5 +63,20 @@ namespace Utility {
         }
 
         return count;
+    }
+
+    void Path::SplitPath(const char *string, char c, StringView *array) {
+        size_t index = 0;
+        const char* p = string;
+
+        // StringView is a non-owning view, which does not need a null terminator, so we can just set the data pointer and length
+        while (*p) {
+            while (*p == c) p++; // Skip consecutive delimiters
+            if (*p) {
+                const char* start = p; // Start of the component
+                while (*p && *p != c) p++; // Move to the next delimiter
+                array[index++] = StringView(start, p - start); // Create a StringView for the component
+            }
+        }
     }
 }

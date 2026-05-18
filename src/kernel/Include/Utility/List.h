@@ -2,16 +2,17 @@
 #define BOREALOS_LIST_H
 
 #include <Definitions.h>
+#include "Predicate.h"
 
 namespace Utility {
     /// Basic dynamic array implementation.
     template<typename T>
     class List {
     public:
-
         List(size_t capacity = 16) : _size(0), _capacity(capacity) {
             _data = new T[_capacity];
         }
+
         ~List() {
             delete[] _data;
         }
@@ -19,9 +20,34 @@ namespace Utility {
         List(const List&) = delete;
         List& operator=(const List&) = delete;
 
-        // Remove all other constructors and destructors
-        List(List&&) = delete;
-        List& operator=(List&&) = delete;
+        List(List&& other) {
+            _size = other._size;
+            _capacity = other._capacity;
+            _data = other._data;
+
+            other._size = 0;
+            other._capacity = 0;
+            other._data = nullptr;
+        }
+
+        List& operator=(List&& other) {
+            if (this == &other) {
+                return *this; // Self-assignment check
+            }
+
+            delete[] _data;
+
+            _size = other._size;
+            _capacity = other._capacity;
+            _data = other._data;
+
+            other._size = 0;
+            other._capacity = 0;
+            other._data = nullptr;
+
+            return *this;
+        }
+
         List() = delete;
 
         void Add(const T& item) {
@@ -81,8 +107,61 @@ namespace Utility {
             _size = 0;
         }
 
+        // Resize (if necessary) and act as if we added newCapacity items.
+        // This calls the default constructor for any new items, so it is not just a simple resize, it is more of a "reserve and default construct" function.
+        void Reserve(size_t newCapacity) {
+            size_t oldSize = _size;
+            if (newCapacity > _capacity) {
+                Resize(newCapacity);
+            }
+
+            _size = newCapacity;
+            for (size_t i = oldSize; i < newCapacity; i++) {
+                _data[i] = T();
+            }
+        }
+
         [[nodiscard]] size_t Size() const { return _size; }
         [[nodiscard]] size_t Capacity() const { return _capacity; }
+        [[nodiscard]] T* begin() { return _data; }
+        [[nodiscard]] T* end() { return _data + _size; }
+
+        bool Any(Predicate<T> predicate) {
+            for (size_t i = 0; i < _size; i++) {
+                if (predicate(_data[i])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool All(Predicate<T> predicate) {
+            for (size_t i = 0; i < _size; i++) {
+                if (!predicate(_data[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        Optional<T> Find(Predicate<T> predicate) {
+            for (size_t i = 0; i < _size; i++) {
+                if (predicate(_data[i])) {
+                    return Optional<T>(_data[i]);
+                }
+            }
+            return Optional<T>(); // Not found
+        }
+
+        Optional<T> FindLast(Predicate<T> predicate) {
+            for (size_t i = _size; i-- > 0;) {
+                if (predicate(_data[i])) {
+                    return Optional<T>(_data[i]);
+                }
+            }
+            return Optional<T>(); // Not found
+        }
+
 
     private:
         void Resize(size_t newCapacity) {

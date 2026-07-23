@@ -1,9 +1,0 @@
-/build/
-/bin/
-/src/config/boot/kernel.elf
-/HDD.img
-/logs/
-/ramfs/modules
-/ramfs/kernel.sym
-/ramfs/bin
-/ramfs/lib

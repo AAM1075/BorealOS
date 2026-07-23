@@ -3,10 +3,5 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/deps/Limine" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/deps/mlibc-borealos" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/deps/mlibc-borealos/subprojects/freestnd-c-hdrs" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/deps/mlibc-borealos/subprojects/freestnd-cxx-hdrs" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/deps/mlibc-borealos/subprojects/frigg" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/deps/mlibc-borealos/subprojects/libsmarter" vcs="Git" />
   </component>
 </project>

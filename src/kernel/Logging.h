@@ -3,8 +3,7 @@
 
 #include <Utility/Formatter.h>
 #include <Utility/Traits.h>
-
-#include "Utility/ANSI.h"
+#include <Utility/ANSI.h>
 
 enum class LOG_LEVEL {
     DEBUG = 0,

@@ -3,8 +3,6 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <Utility/Formatter.h>
-#include <Utility/Traits.h>
 
 #define PACKED __attribute__((packed))
 #define ALIGNED(x) __attribute__((aligned(x)))

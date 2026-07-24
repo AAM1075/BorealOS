@@ -1,9 +1,6 @@
 #include "Kernel.h"
-
-#include <Logging.h>
-
 #include "Parameters.h"
-#include "Boot/LimineDefinitions.h"
+#include <Logging.h>
 
 void Kernel::Initialize() {
     Data.framebufferConsole.Initialize();

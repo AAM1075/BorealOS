@@ -27,7 +27,7 @@ target_link_libraries(kernel.elf PRIVATE kernel.api)
 target_include_directories(kernel.elf PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_options(kernel.elf PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:${KERNEL_COMPILE_FLAGS_CXX}>
+        $<$<COMPILE_LANGUAGE:CXX>:${KERNEL_COMPILE_FLAGS_CXX} -fno-threadsafe-statics -freflection>
         $<$<COMPILE_LANGUAGE:C>:${KERNEL_COMPILE_FLAGS_C}>
 )
 

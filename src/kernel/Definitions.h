@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <Utility/Formatter.h>
+#include <Utility/Traits.h>
 
 #define PACKED __attribute__((packed))
 #define ALIGNED(x) __attribute__((aligned(x)))
@@ -11,11 +13,10 @@
 #define CLEAR_BIT(p, n) ((p) &= ~(1U << (n)))
 
 namespace Core {
-    void Print(const char* message);
+    void Write(const char* message, size_t c);
     [[noreturn]] void Panic(const char* message);
 }
 
-#define PRINT(msg) do { Core::Print(msg); Core::Print("\n\r"); } while(0)
-#define PANIC(msg) do { Core::Panic(msg); } while(0)
+#define PANIC(message) Core::Panic(message)
 
 #endif //BOREALOS_DEFINITIONS_H

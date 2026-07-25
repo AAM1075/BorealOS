@@ -46,6 +46,8 @@ namespace IO {
 
         _initialized = true;
 
+        Write(Utility::ANSI::Colors::Background::OURBLE);
+        Write(Utility::ANSI::Colors::Foreground::White);
         Write(Utility::ANSI::EscapeCodes::ClearScreen);
     }
 

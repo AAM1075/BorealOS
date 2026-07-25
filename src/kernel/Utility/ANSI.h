@@ -31,14 +31,14 @@ namespace Utility::ANSI {
         namespace Foreground {
 
             // Normal
-            constexpr const char* Magenta = "\033[0;35m";
-            constexpr const char* Yellow  = "\033[0;33m";
-            constexpr const char* Black   = "\033[0;30m";
-            constexpr const char* Green   = "\033[0;32m";
-            constexpr const char* White   = "\033[0;37m";
-            constexpr const char* Blue    = "\033[0;34m";
-            constexpr const char* Cyan    = "\033[0;36m";
-            constexpr const char* Red     = "\033[0;31m";
+            constexpr const char* Magenta = "\033[35m";
+            constexpr const char* Yellow  = "\033[33m";
+            constexpr const char* Black   = "\033[30m";
+            constexpr const char* Green   = "\033[32m";
+            constexpr const char* White   = "\033[37m";
+            constexpr const char* Blue    = "\033[34m";
+            constexpr const char* Cyan    = "\033[36m";
+            constexpr const char* Red     = "\033[31m";
 
             // Bright
             constexpr const char* BrightMagenta = "\033[1;35m";

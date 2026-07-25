@@ -9,12 +9,6 @@ void Kernel::Initialize() {
     auto logLevel = Data.commandLineExtractor.GetValue<uint64_t>(Parameters::LOG_LEVEL);
     if (logLevel.HasValue())
         Data.minimumLogLevel = static_cast<LOG_LEVEL>(logLevel.Value());
-
-    LOG_DEBUG("Test");
-    LOG_INFO("Test");
-    LOG_WARNING("Test");
-    LOG_ERROR("Test");
-    LOG_FATAL("Test");
 }
 
 void Kernel::Start() {

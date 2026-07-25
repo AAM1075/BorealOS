@@ -21,7 +21,11 @@ target_include_directories(kernel.api INTERFACE
         ${flanterm_SOURCE_DIR}/src
 )
 
-add_executable(kernel.elf ${SOURCES} ${HEADERS} ${FLANTERM_SOURCES})
+add_executable(kernel.elf ${SOURCES} ${HEADERS} ${FLANTERM_SOURCES}
+        IO/Serial.h
+        IO/PortIO.h
+        IO/Serial.cpp
+        IO/PortIO.cpp)
 
 target_link_libraries(kernel.elf PRIVATE kernel.api)
 target_include_directories(kernel.elf PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

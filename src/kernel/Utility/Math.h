@@ -33,6 +33,18 @@ namespace Utility::Math {
         }
         return result;
     }
+
+    template<typename T>
+    // only works with integers
+    [[nodiscard]] constexpr T AlignUp(T value, T alignment) {
+        return (value + alignment - 1) & ~(alignment - 1);
+    }
+
+    template<typename T>
+    // only works with integers
+    [[nodiscard]] constexpr T AlignDown(T value, T alignment) {
+        return value & ~(alignment - 1);
+    }
 }
 
 #endif //BOREALOS_MATH_H

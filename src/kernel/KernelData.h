@@ -4,12 +4,14 @@
 #include <Logging.h>
 
 #include "IO/FramebufferConsole.h"
+#include "Memory/PhysicalMemoryManager.h"
 #include "Utility/CommandLineExtractor.h"
 
 struct KernelData {
     IO::FramebufferConsole framebufferConsole;
     Utility::CommandLineExtractor commandLineExtractor;
-    LOG_LEVEL minimumLogLevel;
+    LogLevel minimumLogLevel;
+    Memory::PhysicalMemoryManager physicalMemoryManager;
 };
 
 #endif //BOREALOS_KERNELDATA_H

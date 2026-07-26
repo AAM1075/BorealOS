@@ -1,11 +1,13 @@
 #include "FramebufferConsole.h"
 
 #include "Boot/LimineDefinitions.h"
+#include "Threading/Spinlock.h"
 #include "Utility/ANSI.h"
 #include "Utility/cstring.h"
 
 namespace IO {
     void FramebufferConsole::Initialize() {
+        _lock = Threading::Spinlock();
         if (!Boot::Limine::FramebufferRequest.response || Boot::Limine::FramebufferRequest.response->framebuffer_count <= 0)
             PANIC("Framebuffer not available");
 
@@ -52,6 +54,7 @@ namespace IO {
     }
 
     void FramebufferConsole::Write(const char *buff, size_t size) {
+        Threading::ScopedLock lock(_lock, true);
         if (_initialized)
             flanterm_write(_ftContext, buff, size);
     }

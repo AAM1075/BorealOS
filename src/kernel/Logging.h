@@ -5,7 +5,7 @@
 #include <Utility/Traits.h>
 #include <Utility/ANSI.h>
 
-enum class LOG_LEVEL {
+enum class LogLevel {
     DEBUG = 0,
     INFO = 1,
     WARNING = 2,
@@ -14,10 +14,10 @@ enum class LOG_LEVEL {
 };
 
 namespace Logging {
-    bool LogMessage(LOG_LEVEL);
+    bool LogMessage(LogLevel);
 
     template<typename... Args>
-    void LogFmt(LOG_LEVEL level, Utility::StringView file, Utility::Formatter::Writer out, Utility::Formatter::FormatString<Utility::Traits::TypeIdentityT<Args>...> message, Args&&... args) {
+    void LogFmt(LogLevel level, Utility::StringView file, Utility::Formatter::Writer out, Utility::Formatter::FormatString<Utility::Traits::TypeIdentityT<Args>...> message, Args&&... args) {
         if (!LogMessage(level))
             return;
 
@@ -26,19 +26,19 @@ namespace Logging {
 
         Utility::StringView levelStr = "UNKNOWN";
 
-        if (level == LOG_LEVEL::DEBUG) {
+        if (level == LogLevel::DEBUG) {
             color = Utility::ANSI::Colors::Foreground::Cyan;
             levelStr = "DEBUG";
-        } else if (level == LOG_LEVEL::INFO) {
+        } else if (level == LogLevel::INFO) {
             color = Utility::ANSI::Colors::Foreground::Green;
             levelStr = "INFO";
-        } else if (level == LOG_LEVEL::WARNING) {
+        } else if (level == LogLevel::WARNING) {
             color = Utility::ANSI::Colors::Foreground::Yellow;
             levelStr = "WARNING";
-        } else if (level == LOG_LEVEL::ERROR) {
+        } else if (level == LogLevel::ERROR) {
             color = Utility::ANSI::Colors::Foreground::Red;
             levelStr = "ERROR";
-        } else if (level == LOG_LEVEL::FATAL) {
+        } else if (level == LogLevel::FATAL) {
             color = Utility::ANSI::Colors::Foreground::Red;
             levelStr = "FATAL";
         }
@@ -69,10 +69,10 @@ namespace Logging {
     } \
 } while(0)
 
-#define LOG_DEBUG(msg, ...) LOG_MESSAGE(LOG_LEVEL::DEBUG, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
-#define LOG_INFO(msg, ...) LOG_MESSAGE(LOG_LEVEL::INFO, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
-#define LOG_WARNING(msg, ...) LOG_MESSAGE(LOG_LEVEL::WARNING, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
-#define LOG_ERROR(msg, ...) LOG_MESSAGE(LOG_LEVEL::ERROR, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
-#define LOG_FATAL(msg, ...) LOG_MESSAGE(LOG_LEVEL::FATAL, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
+#define LOG_DEBUG(msg, ...) LOG_MESSAGE(LogLevel::DEBUG, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
+#define LOG_INFO(msg, ...) LOG_MESSAGE(LogLevel::INFO, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
+#define LOG_WARNING(msg, ...) LOG_MESSAGE(LogLevel::WARNING, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
+#define LOG_ERROR(msg, ...) LOG_MESSAGE(LogLevel::ERROR, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
+#define LOG_FATAL(msg, ...) LOG_MESSAGE(LogLevel::FATAL, "[" __FILE_NAME__ ":" STRINGIFY(__LINE__)"]", msg, __VA_ARGS__)
 
 #endif //BOREALOS_LOGGING_H

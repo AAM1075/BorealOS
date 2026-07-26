@@ -8,7 +8,9 @@ void Kernel::Initialize() {
 
     auto logLevel = Data.commandLineExtractor.GetValue<uint64_t>(Parameters::LOG_LEVEL);
     if (logLevel.HasValue())
-        Data.minimumLogLevel = static_cast<LOG_LEVEL>(logLevel.Value());
+        Data.minimumLogLevel = static_cast<LogLevel>(logLevel.Value());
+
+    Data.physicalMemoryManager.Initialize();
 }
 
 void Kernel::Start() {
@@ -20,7 +22,7 @@ void Kernel::Log(const char *message, size_t c) {
 }
 
 void Kernel::Panic(const char *message) {
-    asm("cli");
+    asm volatile ("cli");
 
     Data.framebufferConsole.Write("Kernel panic: ");
     Data.framebufferConsole.Write(message);
@@ -34,8 +36,8 @@ Kernel & Kernel::GetInstance() {
     return instance;
 }
 
-bool Logging::LogMessage(LOG_LEVEL level) {
-    if (level >= LOG_LEVEL::ERROR) {
+bool Logging::LogMessage(LogLevel level) {
+    if (level >= LogLevel::ERROR) {
         return true;
     }
 

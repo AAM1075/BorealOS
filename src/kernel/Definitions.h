@@ -15,6 +15,15 @@ namespace Core {
     [[noreturn]] void Panic(const char* message);
 }
 
+namespace Constants {
+    constexpr uint64_t KiB = 1024;
+    constexpr uint64_t MiB = KiB * 1024;
+    constexpr uint64_t GiB = MiB * 1024;
+    constexpr uint64_t TiB = GiB * 1024;
+    constexpr uint64_t PiB = TiB * 1024;
+    constexpr uint64_t PageSize = 4 * KiB;
+}
+
 #define PANIC(message) Core::Panic(message)
 
 #endif //BOREALOS_DEFINITIONS_H

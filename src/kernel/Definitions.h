@@ -11,11 +11,19 @@
 #define CLEAR_BIT(p, n) ((p) &= ~(1U << (n)))
 
 namespace Core {
-    void Print(const char* message);
+    void Write(const char* message, size_t c);
     [[noreturn]] void Panic(const char* message);
 }
 
-#define PRINT(msg) do { Core::Print(msg); Core::Print("\n\r"); } while(0)
-#define PANIC(msg) do { Core::Panic(msg); } while(0)
+namespace Constants {
+    constexpr uint64_t KiB = 1024;
+    constexpr uint64_t MiB = KiB * 1024;
+    constexpr uint64_t GiB = MiB * 1024;
+    constexpr uint64_t TiB = GiB * 1024;
+    constexpr uint64_t PiB = TiB * 1024;
+    constexpr uint64_t PageSize = 4 * KiB;
+}
+
+#define PANIC(message) Core::Panic(message)
 
 #endif //BOREALOS_DEFINITIONS_H

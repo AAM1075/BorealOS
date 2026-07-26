@@ -1,6 +1,7 @@
 #include "Kernel.h"
 #include "Parameters.h"
 #include <Logging.h>
+#include "Interrupts/GDT.h"
 
 void Kernel::Initialize() {
     Data.framebufferConsole.Initialize();
@@ -10,7 +11,17 @@ void Kernel::Initialize() {
     if (logLevel.HasValue())
         Data.minimumLogLevel = static_cast<LogLevel>(logLevel.Value());
 
+    auto mp = Boot::Limine::MultiProcessingRequest.response;
+    if (!mp)
+        PANIC("Limine MultiProcessingRequest response is null, cannot continue!");
+
+    auto cpuId = mp->bsp_lapic_id; // Our core "zero", the core used to boot.
+
+    Interrupts::GDT::Initialize(cpuId, (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop);
+
     Data.physicalMemoryManager.Initialize();
+    Data.paging.Initialize();
+    Data.idt.Initialize();
 }
 
 void Kernel::Start() {
@@ -36,6 +47,10 @@ Kernel & Kernel::GetInstance() {
     return instance;
 }
 
+CpuData * Kernel::GetCpuData() {
+    return &Cpu[Interrupts::GDT::GetCpuId()];
+}
+
 bool Logging::LogMessage(LogLevel level) {
     if (level >= LogLevel::ERROR) {
         return true;
@@ -46,6 +61,11 @@ bool Logging::LogMessage(LogLevel level) {
     }
 
     return false;
+}
+
+Threading::Spinlock& Logging::GetLogLock() {
+    static Threading::Spinlock logLock;
+    return logLock;
 }
 
 void Core::Write(const char *message, size_t c) {

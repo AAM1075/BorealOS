@@ -5,6 +5,8 @@
 #include <Utility/Traits.h>
 #include <Utility/ANSI.h>
 
+#include "Threading/Spinlock.h"
+
 enum class LogLevel {
     DEBUG = 0,
     INFO = 1,
@@ -15,11 +17,14 @@ enum class LogLevel {
 
 namespace Logging {
     bool LogMessage(LogLevel);
+    Threading::Spinlock& GetLogLock();
 
     template<typename... Args>
     void LogFmt(LogLevel level, Utility::StringView file, Utility::Formatter::Writer out, Utility::Formatter::FormatString<Utility::Traits::TypeIdentityT<Args>...> message, Args&&... args) {
         if (!LogMessage(level))
             return;
+
+        Threading::ScopedLock lock(GetLogLock(), true);
 
         Utility::StringView color = Utility::ANSI::Colors::Foreground::White;
         Utility::StringView defaultColor = Utility::ANSI::Colors::Foreground::White;

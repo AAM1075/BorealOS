@@ -1,9 +1,11 @@
 #include "Kernel.h"
+#include "IO/Serial.h"
 #include "Parameters.h"
 #include <Logging.h>
 #include "Interrupts/GDT.h"
 
 void Kernel::Initialize() {
+    Data.debugPort.Initialize();
     Data.framebufferConsole.Initialize();
     Data.commandLineExtractor.Initialize();
 
@@ -29,12 +31,15 @@ void Kernel::Start() {
 }
 
 void Kernel::Log(const char *message, size_t c) {
+    Data.debugPort.Write(message, c);
     Data.framebufferConsole.Write(message, c);
 }
 
 void Kernel::Panic(const char *message) {
     asm volatile ("cli");
 
+    Data.debugPort.Write("Kernel panic: ", 14);
+    Data.debugPort.Write(message, strlen(message));
     Data.framebufferConsole.Write("Kernel panic: ");
     Data.framebufferConsole.Write(message);
 

@@ -7,7 +7,6 @@
 
 namespace IO {
     void FramebufferConsole::Initialize() {
-        _lock = Threading::Spinlock();
         if (!Boot::Limine::FramebufferRequest.response || Boot::Limine::FramebufferRequest.response->framebuffer_count <= 0)
             PANIC("Framebuffer not available");
 

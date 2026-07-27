@@ -20,6 +20,10 @@ namespace IO {
         }
     }
 
+    Serial::Serial(uint16_t comPort) {
+        _comPort = comPort;
+    }
+
     void Serial::Write(const char* data, const size_t length) {
         Threading::ScopedLock lock(_lock, true);
         for (size_t charIndex = 0; charIndex < length; charIndex++) {
@@ -30,9 +34,7 @@ namespace IO {
 
     // Initialize am RS232 COM port
     // NOTE: See IO::Serial for port definitions
-    void Serial::Initialize() {
-        _lock = Threading::Spinlock();
-
+    void Serial::Initialize() const {
         // We can skip the loopback test because we have "modern" serial controller ICs; we rarely have to worry about miswired or faulty UART systems anymore
         // NOTE: See https://wiki.osdev.org/Serial_Ports#Initialization
         Port::outb(_comPort + 1, 0x00); // Disable all interrupts

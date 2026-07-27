@@ -18,12 +18,10 @@ namespace IO {
         static constexpr uint16_t COM7 = 0x5E8;
         static constexpr uint16_t COM8 = 0x4E8;
 
-        explicit Serial(const uint16_t comPort)
-            : _comPort(comPort) {
-        }
+        explicit Serial(uint16_t comPort);
 
         void Write(const char* data, size_t length);
-        void Initialize();
+        void Initialize() const;
         [[nodiscard]] uint32_t TransmitEmpty() const;
         [[nodiscard]] uint32_t Available() const;
         [[nodiscard]] bool PortInitialized() const;

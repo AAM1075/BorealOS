@@ -38,6 +38,7 @@ void Kernel::Log(const char *message, size_t c) {
 void Kernel::Panic(const char *message) {
     asm volatile ("cli");
 
+    Data.debugPort.Write("Kernel panic: ", 14);
     Data.debugPort.Write(message, strlen(message));
     Data.framebufferConsole.Write("Kernel panic: ");
     Data.framebufferConsole.Write(message);

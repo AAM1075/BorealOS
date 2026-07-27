@@ -47,6 +47,14 @@ volatile limine_executable_cmdline_request Boot::Limine::CommandlineRequest = {
     .response = nullptr,
 };
 
+__attribute__((used, section(".limine_requests")))
+volatile limine_mp_request Boot::Limine::MultiProcessingRequest = {
+    .id = LIMINE_MP_REQUEST_ID,
+    .revision = 0,
+    .response = nullptr,
+    .flags = LIMINE_MP_REQUEST_X86_64_X2APIC
+};
+
 __attribute__((used, section(".limine_requests_start")))
 volatile uint64_t Boot::Limine::LimineRequestsStartMarker[] = LIMINE_REQUESTS_START_MARKER;
 

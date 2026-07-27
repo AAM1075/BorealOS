@@ -11,8 +11,10 @@ public:
     void Log(const char* message, size_t c);
     [[noreturn]] void Panic(const char* message);
     static Kernel& GetInstance();
+    CpuData* GetCpuData();
 
     KernelData Data;
+    CpuData Cpu[Architecture::MaxCPUs];
 };
 
 #endif //BOREALOS_KERNEL_H

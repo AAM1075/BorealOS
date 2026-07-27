@@ -12,6 +12,7 @@ namespace Boot::Limine {
     extern volatile struct limine_module_request ModuleRequest;
     extern volatile struct limine_rsdp_request RsdpRequest;
     extern volatile struct limine_executable_cmdline_request CommandlineRequest;
+    extern volatile struct limine_mp_request MultiProcessingRequest;
     extern volatile uint64_t LimineRequestsStartMarker[];
     extern volatile uint64_t LimineRequestsEndMarker[];
 }

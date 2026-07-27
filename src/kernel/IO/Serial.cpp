@@ -25,6 +25,8 @@ namespace IO {
     }
 
     void Serial::Write(const char* data, const size_t length) {
+        if (!portsInitStatus[GetPortIndex(_comPort)]) return;
+
         Threading::ScopedLock lock(_lock, true);
         for (size_t charIndex = 0; charIndex < length; charIndex++) {
             while (TransmitEmpty() == 0) {}
@@ -50,7 +52,8 @@ namespace IO {
 
         // The serial port can only be marked as initialized if it exists
         if (!PortExists()) {
-            PANIC("Serial port initialization failed!");
+            LOG_ERROR("Serial port {} initialization failed!", (void*)(uintptr_t)_comPort);
+            return;
         }
 
         portsInitStatus[GetPortIndex(_comPort)] = true;

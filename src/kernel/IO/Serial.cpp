@@ -52,7 +52,7 @@ namespace IO {
         }
 
         portsInitStatus[GetPortIndex(_comPort)] = true;
-        LOG_INFO("Serial port {} initialized.", reinterpret_cast<void*>(static_cast<uintptr_t>(_comPort)));
+        LOG_INFO("Serial port {} initialized.", (void*)(uintptr_t)_comPort);
     }
 
     // Check if a port exists and is functioning by checking if the transmit buffer is empty

@@ -40,9 +40,9 @@ namespace Memory {
             validRegionCount++;
         }
 
-        _usableFrames = endAddr / Constants::PageSize;
+        _usableFrames = endAddr / Architecture::PageSize;
         _bitmapSize = (_usableFrames + 7) / 8;
-        _bitmapSize = Utility::Math::AlignUp(_bitmapSize, Constants::PageSize);
+        _bitmapSize = Utility::Math::AlignUp(_bitmapSize, Architecture::PageSize);
 
         LOG_DEBUG("Usable frames: {}, Bitmap size: {} bytes", _usableFrames, _bitmapSize);
 
@@ -50,8 +50,8 @@ namespace Memory {
         void* bitmapMemory = nullptr;
 
         for (uint64_t regionIndex = 0; regionIndex < validRegionCount; regionIndex++) {
-            auto start = Utility::Math::AlignUp(validRegions[regionIndex].addr, Constants::PageSize);
-            auto end = Utility::Math::AlignDown(validRegions[regionIndex].addr + validRegions[regionIndex].length, Constants::PageSize);
+            auto start = Utility::Math::AlignUp(validRegions[regionIndex].addr, Architecture::PageSize);
+            auto end = Utility::Math::AlignDown(validRegions[regionIndex].addr + validRegions[regionIndex].length, Architecture::PageSize);
             auto size = (end > start) ? (end - start) : 0;
 
             if (size >= requiredMapStorageSize) {
@@ -75,11 +75,11 @@ namespace Memory {
         }
 
         for (uint64_t regionIndex = 0; regionIndex < validRegionCount; regionIndex++) {
-            auto start = Utility::Math::AlignUp(validRegions[regionIndex].addr, Constants::PageSize);
-            auto end = Utility::Math::AlignDown(validRegions[regionIndex].addr + validRegions[regionIndex].length, Constants::PageSize);
+            auto start = Utility::Math::AlignUp(validRegions[regionIndex].addr, Architecture::PageSize);
+            auto end = Utility::Math::AlignDown(validRegions[regionIndex].addr + validRegions[regionIndex].length, Architecture::PageSize);
 
-            for (uint64_t addr = start; addr < end; addr += Constants::PageSize) {
-                uint64_t frameIndex = addr / Constants::PageSize;
+            for (uint64_t addr = start; addr < end; addr += Architecture::PageSize) {
+                uint64_t frameIndex = addr / Architecture::PageSize;
                 uint64_t byteIndex = frameIndex / 8;
                 uint8_t bitIndex = frameIndex % 8;
 
@@ -88,7 +88,7 @@ namespace Memory {
         }
 
         // Mark the first 1MB as reserved
-        for (uint64_t page = 0; page < (1 * Constants::MiB) / Constants::PageSize; page++) {
+        for (uint64_t page = 0; page < (1 * Constants::MiB) / Architecture::PageSize; page++) {
             uint64_t byteIndex = page / 8;
             uint8_t bitIndex = page % 8;
 
@@ -96,8 +96,8 @@ namespace Memory {
         }
 
         // Reserve the 2 bitmaps
-        auto bitmapStart = (uint64_t)((uintptr_t)bitmapMemory / Constants::PageSize);
-        auto bitmapEnd = Utility::Math::AlignUp(bitmapStart + requiredMapStorageSize, Constants::PageSize) / Constants::PageSize;
+        auto bitmapStart = (uint64_t)((uintptr_t)bitmapMemory / Architecture::PageSize);
+        auto bitmapEnd = Utility::Math::AlignUp(bitmapStart + requiredMapStorageSize, Architecture::PageSize) / Architecture::PageSize;
 
         for (uint64_t page = bitmapStart; page < bitmapEnd; page++) {
             uint64_t byteIndex = page / 8;
@@ -127,7 +127,7 @@ namespace Memory {
             PANIC("Failed test case");
         }
 
-        LOG_INFO("Device has {} MiB, with {} MiB available", (_frameCount * Constants::PageSize) / (Constants::MiB), (_usableFrames * Constants::PageSize) / (Constants::MiB));
+        LOG_INFO("Device has {} MiB, with {} MiB available", (_frameCount * Architecture::PageSize) / (Constants::MiB), (_usableFrames * Architecture::PageSize) / (Constants::MiB));
     }
 
     uintptr_t PhysicalMemoryManager::AllocatePages(size_t pageCount) {
@@ -166,18 +166,18 @@ namespace Memory {
 
         _usableFrames -= pageCount;
 
-        return (runStart * Constants::PageSize);
+        return (runStart * Architecture::PageSize);
     }
 
     void PhysicalMemoryManager::FreePages(uintptr_t start, size_t pageCount) {
         Threading::ScopedLock lock(_lock, true);
 
-        if (start % Constants::PageSize != 0) {
+        if (start % Architecture::PageSize != 0) {
             PANIC("Invalid page start address");
             return;
         }
 
-        size_t startPage = start / Constants::PageSize;
+        size_t startPage = start / Architecture::PageSize;
         size_t endPage = startPage + pageCount;
 
         for (size_t page = startPage; page < endPage; page++) {
@@ -207,7 +207,7 @@ namespace Memory {
         uintptr_t twoPages = AllocatePages(2);
 
         size_t amount = 10;
-        uintptr_t megabytes = AllocatePages(amount * Constants::MiB / Constants::PageSize);
+        uintptr_t megabytes = AllocatePages(amount * Constants::MiB / Architecture::PageSize);
 
         if (!onePage) {
             LOG_ERROR("Failed to allocate 1 page");
@@ -225,7 +225,7 @@ namespace Memory {
 
         FreePages(onePage, 1);
         FreePages(twoPages, 2);
-        FreePages(megabytes, amount * Constants::MiB / Constants::PageSize);
+        FreePages(megabytes, amount * Constants::MiB / Architecture::PageSize);
 
         // Reallocate each page, it should produce the exact same result as before.
         uintptr_t oldOnePage = onePage, oldTwoPages = twoPages, oldFiveMegabytes = megabytes;
@@ -233,7 +233,7 @@ namespace Memory {
 
         onePage = AllocatePages(1);
         twoPages = AllocatePages(2);
-        megabytes = AllocatePages(amount * Constants::MiB / Constants::PageSize);
+        megabytes = AllocatePages(amount * Constants::MiB / Architecture::PageSize);
 
         if (onePage != oldOnePage) {
             LOG_ERROR("Reallocated 1 page at {}, expected {}", (void*)onePage, (void*)oldOnePage);
@@ -247,7 +247,7 @@ namespace Memory {
 
         FreePages(onePage, 1);
         FreePages(twoPages, 2);
-        FreePages(megabytes, amount * Constants::MiB / Constants::PageSize);
+        FreePages(megabytes, amount * Constants::MiB / Architecture::PageSize);
 
         LOG_DEBUG("Successful test!");
 

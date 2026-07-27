@@ -21,7 +21,20 @@ namespace Constants {
     constexpr uint64_t GiB = MiB * 1024;
     constexpr uint64_t TiB = GiB * 1024;
     constexpr uint64_t PiB = TiB * 1024;
-    constexpr uint64_t PageSize = 4 * KiB;
+}
+
+namespace Architecture {
+    constexpr uint64_t MaxCPUs = 1024; // TODO: if somehow this is too little add more
+    constexpr uint64_t PageSize = 4 * Constants::KiB;
+    constexpr uint64_t KernelOffset = 0xFFFFFFFF80000000;
+    extern volatile uintptr_t *StackBottom;
+    extern volatile uintptr_t *StackTop;
+    extern volatile uintptr_t *KernelBase;
+    extern volatile uintptr_t *KernelEnd;
+    extern volatile uintptr_t *DefaultFaultHandlerTop;
+    extern volatile uintptr_t *DefaultFaultHandlerBottom;
+    extern volatile size_t StackSize;
+    extern volatile size_t KernelSize;
 }
 
 #define PANIC(message) Core::Panic(message)

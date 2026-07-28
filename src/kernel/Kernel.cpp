@@ -5,6 +5,7 @@
 #include "Interrupts/GDT.h"
 
 void Kernel::Initialize() {
+    // Initialize the console interfaces
     Data.debugPort.Initialize();
     Data.framebufferConsole.Initialize();
     Data.commandLineExtractor.Initialize();
@@ -13,16 +14,24 @@ void Kernel::Initialize() {
     if (logLevel.HasValue())
         Data.minimumLogLevel = static_cast<LogLevel>(logLevel.Value());
 
+    // Set up multiprocessing and the GDT
     auto mp = Boot::Limine::MultiProcessingRequest.response;
     if (!mp)
         PANIC("Limine MultiProcessingRequest response is null, cannot continue!");
 
-    auto cpuId = mp->bsp_lapic_id; // Our core "zero", the core used to boot.
+    Interrupts::GDT::Initialize(
+        mp->bsp_lapic_id,
+        (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop
+    );
 
-    Interrupts::GDT::Initialize(cpuId, (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop);
+    // Initialize all available CPU cores
+    CPU::InitializeCores(*mp);
 
+    // Set up memory management
     Data.physicalMemoryManager.Initialize();
     Data.paging.Initialize();
+
+    // Set up interrupts
     Data.idt.Initialize();
 }
 

@@ -2,11 +2,11 @@
 // Created by andrew on 7/28/26.
 //
 
-#ifndef BOREALOS_STRUTILS_H
-#define BOREALOS_STRUTILS_H
+#ifndef BOREALOS_STRINGUTILS_H
+#define BOREALOS_STRINGUTILS_H
 
 namespace Utility::StrUtils {
     bool IsCharWhitespace(char c);
 }
 
-#endif //BOREALOS_STRUTILS_H
+#endif //BOREALOS_STRINGUTILS_H

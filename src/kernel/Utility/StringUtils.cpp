@@ -1,4 +1,4 @@
-#include "StrUtils.h"
+#include "StringUtils.h"
 
 bool Utility::StrUtils::IsCharWhitespace(const char c) {
     return (

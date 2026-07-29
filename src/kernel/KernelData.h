@@ -13,7 +13,6 @@
 #include "CPU/CPU.h"
 
 struct KernelData {
-    Core::CPU cpu;
     IO::Serial debugPort{IO::Serial::COM1};
     IO::FramebufferConsole framebufferConsole;
     Utility::CommandLineExtractor commandLineExtractor;
@@ -21,6 +20,7 @@ struct KernelData {
     Memory::PhysicalMemoryManager physicalMemoryManager;
     Memory::Paging paging{physicalMemoryManager};
     Interrupts::IDT idt{paging};
+    Core::CPU cpu;
 };
 
 struct CpuData {

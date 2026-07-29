@@ -2,12 +2,13 @@
 #include "CPU.h"
 #include "Logging.h"
 #include "Boot/LimineDefinitions.h"
-#include "Utility/StrUtils.h"
+#include "Utility/StringUtils.h"
 
 void Core::CPU::Initialize() {
     // Get the CPU brand string
-    GetCPUName(_cpuName);
-    LOG_INFO("System processor \"{}\" has {} core(s)", ReadBrandString(), GetCoreCount());
+    ReadBrandString(_cpuName);
+    _cpuNameLength = strlen(_cpuName);
+    LOG_INFO("System processor \"{}\" has {} core(s)", GetCPUName(), GetCoreCount());
 }
 
 void Core::CPU::InitializeCore(uint16_t CPUID) {
@@ -180,7 +181,7 @@ void Core::CPU::InitializeNX(uint16_t CPUID) {
     LOG_INFO("Initialized NX on core #{}", CPUID);
 }
 
-void Core::CPU::GetCPUName(char* buffer) {
+void Core::CPU::ReadBrandString(char* buffer) {
     auto* currentChunk = reinterpret_cast<uint32_t*>(buffer);
 
     // The brand string is contained inside CPUID leaves 0x80000002 to 0x80000004
@@ -265,6 +266,6 @@ uint64_t Core::CPU::ReadMSR(uint32_t MSR) {
     return ((uint64_t)high << 32) | low;
 }
 
-Utility::StringView Core::CPU::ReadBrandString() {
-    return {_cpuName};
+Utility::StringView Core::CPU::GetCPUName() {
+    return {_cpuName, _cpuNameLength};
 }

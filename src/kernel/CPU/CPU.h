@@ -7,20 +7,21 @@
 namespace Core {
     class CPU {
     public:
-        Utility::StringView ReadBrandString();
+        Utility::StringView GetCPUName();
         static uint64_t GetCoreCount();
         static void InitializeCore(uint16_t CPUID);
         void Initialize();
 
     private:
         static uint64_t ReadMSR(uint32_t MSR);
+        static void WriteMSR(uint32_t MSR, uint64_t data);
         static bool CoreHasMSR();
         static void InitializeSIMD(uint16_t CPUID);
         static void InitializeNX(uint16_t CPUID);
-        static void GetCPUName(char* buffer);
-        static void WriteMSR(uint32_t MSR, uint64_t data);
+        static void ReadBrandString(char* buffer);
 
         char _cpuName[49] = "\0";
+        uint8_t _cpuNameLength = 0;
 
         // Model Specific Registers
         static constexpr uint32_t MSR_EXTENDED_FEATURE_ENABLE = 0xC0000080;

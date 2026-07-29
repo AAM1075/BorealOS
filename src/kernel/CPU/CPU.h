@@ -1,38 +1,44 @@
 #ifndef BOREALOS_CPU_H
 #define BOREALOS_CPU_H
 
-#include <Definitions.h>
 #include "Boot/limine.h"
+#include "Utility/StringView.h"
 
-namespace CPU {
-    void InitializeCores(const limine_mp_response &mpResponse);
-    void GetCPUName(char* buffer);
-    uint64_t GetCoreCount();
-    inline char cpuName[49] = "\0";
-}
+namespace Core {
+    class CPU {
+        class SSE {
+            static void InitializeSSE(uint16_t CPUID);
+            friend CPU;
+        };
 
-namespace CPU::SSE {
-    struct alignas(16) FXSaveArea {
-        uint16_t fcw;
-        uint16_t fsw;
-        uint8_t  ftw;
-        uint8_t  reserved1;
-        uint16_t fop;
-        uint64_t fpuIP;
-        uint64_t fpuDP;
-        uint32_t mxcsr;
-        uint32_t mxcsrMask;
-        uint8_t  mmxRegisters[8][16];
-        uint8_t  xmmRegisters[16][16]; // XMM0 - XMM15
-        uint8_t  reserved2[48];
-        uint8_t  available[32];
+        class FPU {
+            static void InitializeFPU(uint16_t CPUID);
+            friend CPU;
+        };
+
+    public:
+        Utility::StringView ReadBrandString();
+        static uint64_t GetCoreCount();
+        static void InitializeCore(uint16_t CPUID);
+        void Initialize();
+
+    private:
+        static uint64_t ReadMSR(uint32_t MSR);
+        static bool CoreHasMSR();
+        static void WriteMSR(uint32_t MSR, uint64_t data);
+        static void GetCPUName(char* buffer);
+        static void InitializeNX(uint16_t CPUID);
+
+        char _cpuName[49] = "\0";
+
+        // Model Specific Registers
+        static constexpr uint32_t MSR_EXTENDED_FEATURE_ENABLE = 0xC0000080;
+
+        // CPUID leaves
+        static constexpr uint32_t LEAF_PROCESSOR_INFO_FEATURES = 0x00000001;
+        static constexpr uint32_t LEAF_EXTENDED_FUNC_PARAMETER = 0x80000000;
+        static constexpr uint32_t LEAF_EXTENDED_PROCESSOR_INFO_FEATURES = 0x80000001;
     };
-
-    void InitializeSSE(uint16_t CPUID);
-}
-
-namespace CPU::FPU {
-    void InitializeFPU(uint16_t CPUID);
 }
 
 #endif //BOREALOS_CPU_H

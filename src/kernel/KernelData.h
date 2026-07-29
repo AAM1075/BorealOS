@@ -13,7 +13,7 @@
 #include "CPU/CPU.h"
 
 struct KernelData {
-
+    Core::CPU cpu;
     IO::Serial debugPort{IO::Serial::COM1};
     IO::FramebufferConsole framebufferConsole;
     Utility::CommandLineExtractor commandLineExtractor;

@@ -24,15 +24,17 @@ void Kernel::Initialize() {
         (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop
     );
 
-    // Initialize all available CPU cores
-    CPU::InitializeCores(*mp);
-
     // Set up memory management
     Data.physicalMemoryManager.Initialize();
     Data.paging.Initialize();
 
     // Set up interrupts
     Data.idt.Initialize();
+
+    // Initialize SSE and the FPU for core 0
+    Data.cpu.Initialize();
+    Core::CPU::InitializeCore(mp->bsp_lapic_id);
+    LOG_INFO("Initialized SSE, FPU, and NX on core 0");
 }
 
 void Kernel::Start() {

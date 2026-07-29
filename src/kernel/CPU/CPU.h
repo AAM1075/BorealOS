@@ -6,16 +6,6 @@
 
 namespace Core {
     class CPU {
-        class SSE {
-            static void InitializeSSE(uint16_t CPUID);
-            friend CPU;
-        };
-
-        class FPU {
-            static void InitializeFPU(uint16_t CPUID);
-            friend CPU;
-        };
-
     public:
         Utility::StringView ReadBrandString();
         static uint64_t GetCoreCount();
@@ -25,9 +15,10 @@ namespace Core {
     private:
         static uint64_t ReadMSR(uint32_t MSR);
         static bool CoreHasMSR();
-        static void WriteMSR(uint32_t MSR, uint64_t data);
-        static void GetCPUName(char* buffer);
+        static void InitializeSIMD(uint16_t CPUID);
         static void InitializeNX(uint16_t CPUID);
+        static void GetCPUName(char* buffer);
+        static void WriteMSR(uint32_t MSR, uint64_t data);
 
         char _cpuName[49] = "\0";
 

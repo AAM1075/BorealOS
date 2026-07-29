@@ -34,7 +34,6 @@ void Kernel::Initialize() {
     // Initialize SSE and the FPU for core 0
     Data.cpu.Initialize();
     Core::CPU::InitializeCore(mp->bsp_lapic_id);
-    LOG_INFO("Initialized SSE, FPU, and NX on core 0");
 }
 
 void Kernel::Start() {

@@ -12,14 +12,18 @@
 #include "Memory/Paging.h"
 #include "Memory/PhysicalMemoryManager.h"
 #include "Utility/CommandLineExtractor.h"
+#include "IO/Serial.h"
+#include "CPU/CPU.h"
 
 struct KernelData {
+    IO::Serial debugPort{IO::Serial::COM1};
     IO::FramebufferConsole framebufferConsole;
     Utility::CommandLineExtractor commandLineExtractor;
     LogLevel minimumLogLevel;
     Memory::PhysicalMemoryManager physicalMemoryManager;
     Memory::Paging paging{physicalMemoryManager};
     Interrupts::IDT idt{paging};
+    Core::CPU cpu;
     Firmware::ACPI acpi{paging};
     Interrupts::IOAPICManager ioapicManager{paging, acpi};
 };

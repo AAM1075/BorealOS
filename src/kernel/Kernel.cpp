@@ -1,9 +1,11 @@
 #include "Kernel.h"
+#include "IO/Serial.h"
 #include "Parameters.h"
 #include <Logging.h>
 #include "Interrupts/GDT.h"
 
 void Kernel::Initialize() {
+    Data.debugPort.Initialize();
     Data.framebufferConsole.Initialize();
     Data.commandLineExtractor.Initialize();
 
@@ -15,21 +17,23 @@ void Kernel::Initialize() {
     if (!mp)
         PANIC("Limine MultiProcessingRequest response is null, cannot continue!");
 
-    auto cpuId = mp->bsp_lapic_id; // Our core "zero", the core used to boot.
+    Interrupts::GDT::Initialize(
+        mp->bsp_lapic_id,
+        (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop
+    );
 
-    Interrupts::GDT::Initialize(cpuId, (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop);
-    GetCpuData()->cpuId = cpuId;
+    GetCpuData()->cpuId = mp->bsp_lapic_id;
 
     Data.physicalMemoryManager.Initialize();
     Data.paging.Initialize();
     Data.idt.Initialize();
+
+    Data.cpu.Initialize();
+    Core::CPU::InitializeCore(mp->bsp_lapic_id);
+
     Data.acpi.Initialize();
     Data.ioapicManager.Initialize();
     GetCpuData()->lapic.Initialize(&Data.paging, &Data.acpi);
-
-    while (true) {
-
-    }
 }
 
 void Kernel::Start() {
@@ -37,12 +41,15 @@ void Kernel::Start() {
 }
 
 void Kernel::Log(const char *message, size_t c) {
+    Data.debugPort.Write(message, c);
     Data.framebufferConsole.Write(message, c);
 }
 
 void Kernel::Panic(const char *message) {
     asm volatile ("cli");
 
+    Data.debugPort.Write("Kernel panic: ", 14);
+    Data.debugPort.Write(message, strlen(message));
     Data.framebufferConsole.Write("Kernel panic: ");
     Data.framebufferConsole.Write(message);
 

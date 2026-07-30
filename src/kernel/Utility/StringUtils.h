@@ -5,7 +5,7 @@
 #ifndef BOREALOS_STRINGUTILS_H
 #define BOREALOS_STRINGUTILS_H
 
-namespace Utility::StrUtils {
+namespace Utility::StringUtils {
     bool IsCharWhitespace(char c);
 }
 

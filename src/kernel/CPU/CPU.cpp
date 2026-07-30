@@ -204,7 +204,7 @@ void Core::CPU::ReadBrandString(char* buffer) {
     // NOTE: This implementation forces a null termination at the end of the brand string buffer for safety
     buffer[48] = '\0';
     for (int charIndex = 47; charIndex >= 0; charIndex--) {
-        if (buffer[charIndex] == '\0' || Utility::StrUtils::IsCharWhitespace(buffer[charIndex])) {
+        if (buffer[charIndex] == '\0' || Utility::StringUtils::IsCharWhitespace(buffer[charIndex])) {
             buffer[charIndex] = '\0';
         }
         else { break; }
@@ -212,7 +212,7 @@ void Core::CPU::ReadBrandString(char* buffer) {
 
     // Eliminate leading whitespace by shifting the buffer contents to the front of the buffer
     uint8_t startIndex = 0;
-    while (buffer[startIndex] != '\0' && Utility::StrUtils::IsCharWhitespace(buffer[startIndex])) { startIndex++; } // Find the first non-whitespace character
+    while (buffer[startIndex] != '\0' && Utility::StringUtils::IsCharWhitespace(buffer[startIndex])) { startIndex++; } // Find the first non-whitespace character
     if (startIndex > 0) {
         uint8_t shiftIndex = 0;
         while (buffer[startIndex + 1] != '\0') {

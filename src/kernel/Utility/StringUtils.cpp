@@ -1,6 +1,6 @@
 #include "StringUtils.h"
 
-bool Utility::StrUtils::IsCharWhitespace(const char c) {
+bool Utility::StringUtils::IsCharWhitespace(const char c) {
     return (
         c == ' '  ||
         c == '\t' ||

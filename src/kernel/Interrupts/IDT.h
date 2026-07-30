@@ -81,15 +81,18 @@ namespace Interrupts {
         void RegisterIRQHandler(uint8_t irq, void (*handler)());
         void IRQHandler(uint8_t irq, Registers *registers);
         void HandleException(uint32_t exceptionVector, uint32_t errorCode, Registers *registers) const;
-        void UnmaskIRQ(uint8_t uint8) const;
-        void MaskIRQ(uint8_t uint8) const;
         [[nodiscard]] const Registers *GetRegistersForInterrupt(uint8_t interruptVector) const;
+
+        uint8_t AllocateVector();
+        void FreeVector(uint8_t);
 
     private:
         IDTPointer _idtPointer = {0, 0};
         void (*_exceptionHandlers[32])() = { nullptr };
         void (*_irqHandlers[256])() = { nullptr };
         Registers* _registersForInterrupts[256] = {}; // This is used to store the register state for the currently handled interrupt, so that it can be accessed by the exception handler (for exceptions) or the IRQ handler (for IRQs) if needed. It is indexed by the interrupt vector number.
+        uint8_t _allocatedVectors[32]{}; // 8 irqs per uint8
+
         void SetIDTEntry(uint8_t vector, uint64_t isr, uint8_t flags);
         bool _isTesting = false;
         Memory::Paging& _paging;

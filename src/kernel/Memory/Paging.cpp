@@ -163,6 +163,32 @@ namespace Memory {
         return false;
     }
 
+    Paging::AvailableVirtualAddressRange Paging::FindAvailableVirtualAddressRange(State *state, uintptr_t start, uintptr_t end, size_t pageCount) {
+        uintptr_t current = start;
+        size_t foundPages = 0;
+
+        while (current < end) {
+            if (!IsMapped(state, current)) {
+                foundPages++;
+                if (foundPages == pageCount) {
+                    uintptr_t rangeStart = current - (pageCount - 1) * Architecture::PageSize;
+                    return { rangeStart, rangeStart + (pageCount * Architecture::PageSize) };
+                }
+            } else {
+                foundPages = 0;
+            }
+            current += Architecture::PageSize;
+        }
+
+        PANIC("Failed to find available virtual address range!");
+    }
+
+    Paging::AvailableVirtualAddressRange Paging::FindAvailableVirtualAddressRangeKernel(size_t count) {
+        uintptr_t start = 0xFFFFFFFF80000000ULL;
+        uintptr_t end = 0xFFFFFFFFFFFFF000ULL;
+        return FindAvailableVirtualAddressRange(&_kernelState, start, end, count);
+    }
+
     void Paging::SwitchToKernelPageTable() {
         SwitchToPageTable(&_kernelState);
     }

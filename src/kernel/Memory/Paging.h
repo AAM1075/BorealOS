@@ -46,6 +46,8 @@ namespace Memory {
 
         uint64_t GetPhysicalAddress(State *state, uint64_t virtualAddress);
         [[nodiscard]] bool IsMapped(State *state, uint64_t virtualAddress);
+        AvailableVirtualAddressRange FindAvailableVirtualAddressRange(State *state, uintptr_t start, uintptr_t end, size_t pageCount);
+        AvailableVirtualAddressRange FindAvailableVirtualAddressRangeKernel(size_t count);
 
         void SwitchToKernelPageTable();
         static void SwitchToPageTable(State *state);

@@ -18,10 +18,18 @@ void Kernel::Initialize() {
     auto cpuId = mp->bsp_lapic_id; // Our core "zero", the core used to boot.
 
     Interrupts::GDT::Initialize(cpuId, (void*)Architecture::StackTop, (void*)Architecture::DefaultFaultHandlerTop);
+    GetCpuData()->cpuId = cpuId;
 
     Data.physicalMemoryManager.Initialize();
     Data.paging.Initialize();
     Data.idt.Initialize();
+    Data.acpi.Initialize();
+    Data.ioapicManager.Initialize();
+    GetCpuData()->lapic.Initialize(&Data.paging, &Data.acpi);
+
+    while (true) {
+
+    }
 }
 
 void Kernel::Start() {

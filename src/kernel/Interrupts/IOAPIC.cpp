@@ -2,7 +2,7 @@
 
 #include "Kernel.h"
 #include "Logging.h"
-#include "IO/Port.h"
+#include "IO/PortIO.h"
 
 namespace {
     constexpr int PIC1 = 0x20;

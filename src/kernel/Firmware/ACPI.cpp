@@ -2,7 +2,7 @@
 
 #include "Logging.h"
 #include "Boot/LimineDefinitions.h"
-#include "IO/Port.h"
+#include "IO/PortIO.h"
 
 namespace Firmware {
     ACPI::ACPI(Memory::Paging &paging) : _paging(paging) {

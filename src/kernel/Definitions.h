@@ -25,6 +25,7 @@ namespace Constants {
 
 namespace Architecture {
     constexpr uint64_t MaxCPUs = 1024; // TODO: if somehow this is too little add more
+    constexpr uint64_t MaxIOAPICs = 16;
     constexpr uint64_t PageSize = 4 * Constants::KiB;
     constexpr uint64_t KernelOffset = 0xFFFFFFFF80000000;
     extern volatile uintptr_t *StackBottom;

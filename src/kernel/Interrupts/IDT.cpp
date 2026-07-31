@@ -38,6 +38,15 @@ void Interrupts::IDT::Initialize() {
     asm volatile("int $0"); // Trigger Division By Zero
     asm volatile("int $3"); // Trigger Breakpoint
     _isTesting = false;
+
+    // Reserve 0-32
+    _allocatedVectors[0] = 0xFF;
+    _allocatedVectors[1] = 0xFF;
+    _allocatedVectors[2] = 0xFF;
+    _allocatedVectors[3] = 0xFF;
+
+    // Reserve 253, 254 and 255
+    _allocatedVectors[31] = 0xE0; // 11100000
 }
 
 void Interrupts::IDT::RegisterExceptionHandler(uint8_t exceptionVector, void(*handler)()) {
@@ -67,7 +76,8 @@ void Interrupts::IDT::IRQHandler(uint8_t irq, Registers *registers) {
         Memory::Paging::SwitchToPageTable(backupState);
     }
 
-    // TODO: When LAPIC make sure to call end of interrupt.
+    if (irq == 0xFF) return;
+    Kernel::GetInstance().GetCpuData()->lapic.SendEOI();
 }
 
 void Interrupts::IDT::HandleException(uint32_t exceptionVector, uint32_t errorCode, Registers *registers) const {
@@ -99,16 +109,25 @@ void Interrupts::IDT::HandleException(uint32_t exceptionVector, uint32_t errorCo
     PANIC("Exception occurred");
 }
 
-void Interrupts::IDT::UnmaskIRQ(uint8_t uint8) const {
-    // TODO: When LAPIC is available do this.
-}
-
-void Interrupts::IDT::MaskIRQ(uint8_t uint8) const {
-    // TODO: When LAPIC is available do this.
-}
-
 const Interrupts::IDT::Registers * Interrupts::IDT::GetRegistersForInterrupt(uint8_t interruptVector) const {
     return _registersForInterrupts[interruptVector];
+}
+
+uint8_t Interrupts::IDT::AllocateVector() {
+    for (uint8_t i = 0; i < 32; i++) {
+        if (_allocatedVectors[i] != 0xFF) {
+            uint8_t bit = __builtin_ffs(~_allocatedVectors[i]) - 1;
+            _allocatedVectors[i] |= (1 << bit);
+            return (i << 3) | bit;
+        }
+    }
+    return 0;
+}
+
+void Interrupts::IDT::FreeVector(uint8_t vector) {
+    uint8_t i = vector >> 3;
+    uint8_t bit = vector & 7;
+    _allocatedVectors[i] &= ~(1 << bit);
 }
 
 void Interrupts::IDT::SetIDTEntry(uint8_t vector, uint64_t isr, uint8_t flags) {
@@ -124,7 +143,7 @@ void Interrupts::IDT::SetIDTEntry(uint8_t vector, uint64_t isr, uint8_t flags) {
 
 extern "C" {
     void IRQHandler(uint8_t irq, uint64_t errorCode, Interrupts::IDT::Registers* regs) {
-        Kernel::GetInstance().Data.idt.IRQHandler(irq - 32, regs);
+        Kernel::GetInstance().Data.idt.IRQHandler(irq, regs);
     }
 
     // Error code is the vector number, so for example, divide by zero is 0, page fault is 14, etc.

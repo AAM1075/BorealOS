@@ -60,7 +60,7 @@ namespace Firmware {
         else
             LOG_DEBUG("Device has power profile of {}", powerProfileStrings[_fadt->preferredPowerManagementProfile]);
 
-        LOG_INFO("Initialized");
+        LOG_INFO("Initialized ACPI");
     }
 
     void * ACPI::GetTable(Utility::StringView signature, size_t index) {

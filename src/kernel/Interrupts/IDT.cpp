@@ -76,6 +76,7 @@ void Interrupts::IDT::IRQHandler(uint8_t irq, Registers *registers) {
         Memory::Paging::SwitchToPageTable(backupState);
     }
 
+    if (irq == 0xFF) return;
     Kernel::GetInstance().GetCpuData()->lapic.SendEOI();
 }
 

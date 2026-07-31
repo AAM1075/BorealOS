@@ -63,7 +63,7 @@ namespace Interrupts {
         }
     };
 
-    inline void ApplyMpsIntiFlags(RedirectionEntry &entry, uint16_t flags) {
+    inline void ApplyMpsInitFlags(RedirectionEntry &entry, uint16_t flags) {
         uint8_t pol = flags & 0x3;
         entry.polarity = (pol == 0b11) ? Polarity::ActiveLow : Polarity::ActiveHigh;
         uint8_t trig = (flags >> 2) & 0x3;

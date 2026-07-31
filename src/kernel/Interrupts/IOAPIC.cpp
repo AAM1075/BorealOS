@@ -25,11 +25,11 @@ namespace Interrupts {
         _version = versionReg & 0xFF;
         _maxRedirectionEntries = ((versionReg >> 16) & 0xFF) + 1;
 
-        LOG_INFO("Initialized IOAPIC {} at GSI base {} with version {} and {} redirection entries", _ioApicId, _gsiBase, _version, _maxRedirectionEntries);
-
         for (uint32_t i = 0; i < _maxRedirectionEntries; i++) {
             SetRedirectionEntryInternal(i, RedirectionFlags::Masked);
         }
+
+        LOG_INFO("Initialized IOAPIC {} at GSI base {} with version {} and {} redirection entries", _ioApicId, _gsiBase, _version, _maxRedirectionEntries);
     }
 
     bool IOAPIC::HasGSI(uint32_t gsi) {
@@ -99,8 +99,6 @@ namespace Interrupts {
             _ioApicCount = Architecture::MaxIOAPICs;
         }
 
-        LOG_DEBUG("Found {} IOAPIC(s)", _ioApicCount);
-
         for (size_t i = 0; i < _ioApicCount; i++) {
             auto entry = (Firmware::ACPI::MADTIOAPIC*)Firmware::ACPI::FindMADTEntry(madt, Firmware::ACPI::MADTEntryType::IOAPIC, i);
             if (!entry) {
@@ -118,7 +116,7 @@ namespace Interrupts {
             _ioApic[i].Initialize(&_paging, (uint32_t*)ioApicMmio, entry->globalSystemInterruptBase, entry->ioApicId);
         }
 
-
+        LOG_INFO("Initialized IOAPIC with {} IOAPIC(s)", _ioApicCount);
     }
 
     IOAPIC * IOAPICManager::GetOwningApic(uint32_t gsi) {

@@ -9,12 +9,12 @@ namespace Core {
     public:
         Utility::StringView GetCPUName();
         static uint64_t GetCoreCount();
+        static uint64_t ReadMSR(uint32_t MSR);
+        static void WriteMSR(uint32_t MSR, uint64_t data);
         static void InitializeCore(uint16_t CPUID);
         void Initialize();
 
     private:
-        static uint64_t ReadMSR(uint32_t MSR);
-        static void WriteMSR(uint32_t MSR, uint64_t data);
         static bool CoreHasMSR();
         static void InitializeSIMD(uint16_t CPUID);
         static void InitializeNX(uint16_t CPUID);

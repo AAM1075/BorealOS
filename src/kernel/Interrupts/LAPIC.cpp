@@ -1,14 +1,14 @@
 #include "LAPIC.h"
 
 #include "Kernel.h"
-#include "Cpu.h"
+#include "CPU/CPU.h"
 
 namespace Interrupts {
     void LAPIC::Initialize(Memory::Paging *paging, Firmware::ACPI *acpi) {
         _paging = paging;
         _acpi = acpi;
 
-        uint64_t apicBaseMsr = Cpu::ReadMSR(IA32_APIC_MSR);
+        uint64_t apicBaseMsr = Core::CPU::ReadMSR(IA32_APIC_MSR);
         uintptr_t physBase = apicBaseMsr & 0xFFFFF000;
 
         if (!SharedLapicVirtualBase) {
@@ -23,7 +23,7 @@ namespace Interrupts {
         _mmioBase = SharedLapicVirtualBase;
 
         if (!(apicBaseMsr & (1 << 11)))
-            Cpu::WriteMSR(IA32_APIC_MSR, apicBaseMsr | (1 << 11));
+            Core::CPU::WriteMSR(IA32_APIC_MSR, apicBaseMsr | (1 << 11));
 
         WriteRegister(LAPICRegister::TPR, 0);
         WriteRegister(LAPICRegister::SPIRV, 0xFF | (1 << 8));

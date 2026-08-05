@@ -14,6 +14,7 @@
 #include "Utility/CommandLineExtractor.h"
 #include "IO/Serial.h"
 #include "CPU/CPU.h"
+#include "Memory/HeapAllocator.h"
 
 struct KernelData {
     IO::Serial debugPort{IO::Serial::COM1};
@@ -22,6 +23,7 @@ struct KernelData {
     LogLevel minimumLogLevel;
     Memory::PhysicalMemoryManager physicalMemoryManager;
     Memory::Paging paging{physicalMemoryManager};
+    Memory::HeapAllocator heapAllocator{physicalMemoryManager, paging};
     Interrupts::IDT idt{paging};
     Core::CPU cpu;
     Firmware::ACPI acpi{paging};

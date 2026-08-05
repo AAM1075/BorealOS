@@ -27,6 +27,7 @@ void Kernel::Initialize() {
     Data.physicalMemoryManager.Initialize();
     Data.paging.Initialize();
     Data.idt.Initialize();
+    Data.heapAllocator.Initialize();
 
     Data.cpu.Initialize();
     Core::CPU::InitializeCore(mp->bsp_lapic_id);

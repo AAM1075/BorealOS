@@ -51,6 +51,7 @@ namespace Memory {
 
         void SwitchToKernelPageTable();
         static void SwitchToPageTable(State *state);
+        State* GetKernelState() { return &_kernelState; };
 
     private:
         Threading::Spinlock _lock;

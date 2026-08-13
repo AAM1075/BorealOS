@@ -38,7 +38,6 @@ namespace Memory {
     }
 
     uintptr_t HeapAllocator::Allocate(size_t objectSize, size_t objectAlignment) {
-        if (objectSize == 0) return 0;
         Threading::ScopedLock lock(_heapLock, true);
 
         // Enforce a minimum size of 16 and get the closest size class that can hold this object
@@ -46,76 +45,84 @@ namespace Memory {
         objectSize = GetClosestSizeMatch(objectSize, objectAlignment);
         int sizeIndex = GetSizeClassIndex(objectSize);
 
-        // Traverse the header chain, starting at the root header
-        SmallAllocSlabHeader* currentHeader = initialHeaderPages[sizeIndex];
-        SmallAllocSlabHeader* tailHeader = nullptr;
+        // Large allocations can just be rounded to the nearest physical page count that can hold an object of this size
+        if (objectSize > Architecture::PageSize / 2) {
+            // Always make sure we allocate at least 1 page. This is a safeguard for future implementations where the page size may not be 4K (like ARM's 16/64K for example)
+            size_t pageCount = Utility::Math::Max(
+                static_cast<size_t>(objectSize / Architecture::PageSize),
+                static_cast<size_t>(1)
+            );
 
-        while (currentHeader != nullptr) {
-            tailHeader = currentHeader;
-
-            for (uint16_t objectIndex = 0; objectIndex < currentHeader->objectCount; objectIndex++) {
-                uint8_t qwordIndex = objectIndex / 64;
-                uint8_t bitIndex = objectIndex % 64;
-
-                // Check if this object is available for allocation
-                if ((currentHeader->allocationBitmap[qwordIndex] & (1ULL << bitIndex)) == 0) {
-                    // Mark this object as allocated and return it's virtual address
-                    currentHeader->allocationBitmap[qwordIndex] |= (1ULL << bitIndex);
-                    return currentHeader->slabAddress + (objectIndex * currentHeader->objectSize);
-                }
-            }
-
-            currentHeader = reinterpret_cast<SmallAllocSlabHeader*>(currentHeader->nextHeaderPageAddress);
-        }
-
-        // All slabs are currently full for this object size, so it's time to allocate a new header
-        // Compare the start of the page and the current tail header's address to see if any more headers can fit in this page
-        uintptr_t pageStart = reinterpret_cast<uintptr_t>(tailHeader) & ~(Architecture::PageSize - 1);
-        bool pageHasRoom = (reinterpret_cast<uintptr_t>(tailHeader) + sizeof(SmallAllocSlabHeader)) < (pageStart + Architecture::PageSize);
-        SmallAllocSlabHeader* newHeader = nullptr;
-
-        // If this page has room, we can just create a new header and data page and then retry the allocation
-        if (pageHasRoom) {
-            // Create the new header and initialize it's properties
-            newHeader = tailHeader + 1;
-            newHeader->objectSize = objectSize;
-            newHeader->objectCount = tailHeader->objectCount;
-            newHeader->nextHeaderPageAddress = 0;
+            // Allocate a physical page if we don't have one for large allocations yet
+            return 0; // Wil return a valid ptr later
         }
         else {
-            // Otherwise, we'll have to allocate a new page
-            // Allocate a new physical page for this size class's headers
-            uintptr_t headerPhysicalAddress = _pmm.AllocatePages(1);
-            Paging::AvailableVirtualAddressRange headerVAddrRange = _paging.FindAvailableVirtualAddressRangeKernel(1);
-            _paging.MapPage(_paging.GetKernelState(), headerVAddrRange.start, headerPhysicalAddress, Paging::Flags::ReadWrite);
+            // Traverse the header chain, starting at the root header
+            SmallAllocSlabHeader* currentHeader = _initialHeaderPages[sizeIndex];
+            SmallAllocSlabHeader* tailHeader = nullptr;
 
-            // Zero out the entire header page to get rid of any garbage memory
-            __builtin_memset(reinterpret_cast<void*>(headerVAddrRange.start), 0, Architecture::PageSize);
+            while (currentHeader != nullptr) {
+                tailHeader = currentHeader;
 
-            // Configure the new header
-            newHeader = reinterpret_cast<SmallAllocSlabHeader*>(headerVAddrRange.start);
-            newHeader->objectSize = objectSize;
-            newHeader->objectCount = tailHeader->objectCount;
-            newHeader->nextHeaderPageAddress = 0;
+                for (uint16_t objectIndex = 0; objectIndex < currentHeader->objectCount; objectIndex++) {
+                    uint8_t qwordIndex = objectIndex / 64;
+                    uint8_t bitIndex = objectIndex % 64;
+
+                    // Check if this object is available for allocation
+                    if ((currentHeader->allocationBitmap[qwordIndex] & (1ULL << bitIndex)) == 0) {
+                        // Mark this object as allocated and return it's virtual address
+                        currentHeader->allocationBitmap[qwordIndex] |= (1ULL << bitIndex);
+                        return currentHeader->slabAddress + (objectIndex * currentHeader->objectSize);
+                    }
+                }
+
+                currentHeader = reinterpret_cast<SmallAllocSlabHeader*>(currentHeader->nextHeaderPageAddress);
+            }
+
+            // All slabs are currently full for this object size, so it's time to allocate a new header
+            // Compare the start of the page and the current tail header's address to see if any more headers can fit in this page
+            uintptr_t pageStart = reinterpret_cast<uintptr_t>(tailHeader) & ~(Architecture::PageSize - 1);
+            bool pageHasRoom = (reinterpret_cast<uintptr_t>(tailHeader) + sizeof(SmallAllocSlabHeader)) < (pageStart + Architecture::PageSize);
+            SmallAllocSlabHeader* newHeader = nullptr;
+
+            // If this page has room, we can just create a new header and data page and then retry the allocation
+            if (pageHasRoom) {
+                // Create the new header and initialize it's properties
+                newHeader = tailHeader + 1;
+                newHeader->objectSize = objectSize;
+                newHeader->objectCount = tailHeader->objectCount;
+                newHeader->nextHeaderPageAddress = 0;
+            }
+            else {
+                // Otherwise, we'll have to allocate a new page
+                // Allocate a new physical page for this size class's headers
+                uintptr_t headerPhysicalAddress = _pmm.AllocatePages(1);
+                Paging::AvailableVirtualAddressRange headerVAddrRange = _paging.FindAvailableVirtualAddressRangeKernel(1);
+                _paging.MapPage(_paging.GetKernelState(), headerVAddrRange.start, headerPhysicalAddress, Paging::Flags::ReadWrite);
+
+                // Zero out the entire header page to get rid of any garbage memory
+                __builtin_memset(reinterpret_cast<void*>(headerVAddrRange.start), 0, Architecture::PageSize);
+
+                // Configure the new header
+                newHeader = reinterpret_cast<SmallAllocSlabHeader*>(headerVAddrRange.start);
+                newHeader->objectSize = objectSize;
+                newHeader->objectCount = tailHeader->objectCount;
+                newHeader->nextHeaderPageAddress = 0;
+            }
+
+            // Allocate a new data page for this header
+            uintptr_t newDataPagePhysicalAddress = _pmm.AllocatePages(1);
+            Paging::AvailableVirtualAddressRange newDataPageVAddrRange = _paging.FindAvailableVirtualAddressRangeKernel(1);
+            _paging.MapPage(_paging.GetKernelState(), newDataPageVAddrRange.start, newDataPagePhysicalAddress, Paging::Flags::ReadWrite);
+            newHeader->slabAddress = newDataPageVAddrRange.start;
+
+            // Assign the new header's address to the tail header so it knows that this is the next header in the chain
+            tailHeader->nextHeaderPageAddress = reinterpret_cast<uintptr_t>(newHeader);
+
+            // Retry the allocation
+            newHeader->allocationBitmap[0] |= (1ULL << 0);
+            return newHeader->slabAddress;
         }
-
-        // Zero the allocation bitmap since RAM can contain garbage data on power-on
-        for (auto& word : newHeader->allocationBitmap) {
-            word = 0;
-        }
-
-        // Allocate a new data page for this header
-        uintptr_t newDataPagePhysicalAddress = _pmm.AllocatePages(1);
-        Paging::AvailableVirtualAddressRange newDataPageVAddrRange = _paging.FindAvailableVirtualAddressRangeKernel(1);
-        _paging.MapPage(_paging.GetKernelState(), newDataPageVAddrRange.start, newDataPagePhysicalAddress, Paging::Flags::ReadWrite);
-        newHeader->slabAddress = newDataPageVAddrRange.start;
-
-        // Assign the new header's address to the tail header so it knows that this is the next header in the chain
-        tailHeader->nextHeaderPageAddress = reinterpret_cast<uintptr_t>(newHeader);
-
-        // Retry the allocation
-        newHeader->allocationBitmap[0] |= (1ULL << 0);
-        return newHeader->slabAddress;
     }
 
     void HeapAllocator::Free(uintptr_t objectAddress) {
@@ -123,7 +130,7 @@ namespace Memory {
         Threading::ScopedLock lock(_heapLock, true);
 
         // Iterate through all the size classes to find which pool owns this address
-        for (auto currentHeader : initialHeaderPages) {
+        for (auto currentHeader : _initialHeaderPages) {
             while (currentHeader != nullptr) {
                 if (objectAddress >= currentHeader->slabAddress && objectAddress < currentHeader->slabAddress + Architecture::PageSize) {
                     // We found the correct pool, now we need to calculate the object index based on its offset in the slab
@@ -159,23 +166,25 @@ namespace Memory {
 
             // Treat the new page as an array of SmallAllocSlabHeader
             auto* headerArray = reinterpret_cast<SmallAllocSlabHeader*>(headerVAddrRange.start);
-            initialHeaderPages[sizeIndex] = &headerArray[0];
+            _initialHeaderPages[sizeIndex] = &headerArray[0];
 
             // Initialize the root header's parameters
-            initialHeaderPages[sizeIndex]->objectSize = objectSize;
-            initialHeaderPages[sizeIndex]->objectCount = Architecture::PageSize / objectSize;
-            initialHeaderPages[sizeIndex]->nextHeaderPageAddress = 0;
+            _initialHeaderPages[sizeIndex]->objectSize = objectSize;
+            _initialHeaderPages[sizeIndex]->objectCount = Architecture::PageSize / objectSize;
+            _initialHeaderPages[sizeIndex]->nextHeaderPageAddress = 0;
 
             // Allocate the initial data slab for this size class
             uintptr_t slabPhysicalAddress = _pmm.AllocatePages(1);
             Paging::AvailableVirtualAddressRange slabVAddrRange = _paging.FindAvailableVirtualAddressRangeKernel(1);
             _paging.MapPage(_paging.GetKernelState(), slabVAddrRange.start, slabPhysicalAddress, Paging::Flags::ReadWrite);
 
-            initialHeaderPages[sizeIndex]->slabAddress = slabVAddrRange.start;
+            _initialHeaderPages[sizeIndex]->slabAddress = slabVAddrRange.start;
         }
 
         globalHeapAllocator = this;
         LOG_INFO("Heap allocator initialized");
+
+        Allocate(4097, 8);
     }
 } // Memory
 

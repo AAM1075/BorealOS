@@ -19,8 +19,6 @@ namespace Memory {
         void Initialize();
 
     private:
-        Threading::Spinlock _heapLock;
-
         struct alignas(64) SmallAllocSlabHeader {
             uintptr_t nextHeaderPageAddress{};
             uintptr_t slabAddress{};
@@ -41,9 +39,11 @@ namespace Memory {
             uint64_t heapSize = 0; // Total heap size in bytes (page count * page size)
         };
 
-        SmallAllocSlabHeader* initialHeaderPages[8]{};
+        LargeAllocSlabHeader* _largeAllocationHeaders = nullptr;
+        SmallAllocSlabHeader* _initialHeaderPages[8]{};
         PhysicalMemoryManager& _pmm;
         Paging& _paging;
+        Threading::Spinlock _heapLock;
 
         static size_t GetClosestSizeMatch(size_t objectSize, size_t objectAlignment);
         [[nodiscard]] int GetSizeClassIndex(size_t objectSize) const;
